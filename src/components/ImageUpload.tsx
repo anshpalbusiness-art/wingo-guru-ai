@@ -28,8 +28,8 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
     <div
       {...getRootProps()}
       className={cn(
-        "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all",
-        isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+        "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all bg-black/40",
+        isDragActive ? "border-white bg-white/5" : "border-white/20 hover:border-white/50",
         isProcessing && "opacity-50 cursor-not-allowed"
       )}
     >
@@ -37,13 +37,13 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
       
       <div className="flex flex-col items-center gap-3">
         {isDragActive ? (
-          <ImageIcon className="w-12 h-12 text-primary animate-bounce" />
+          <ImageIcon className="w-12 h-12 text-white animate-bounce" />
         ) : (
-          <Upload className="w-12 h-12 text-muted-foreground" />
+          <Upload className="w-12 h-12 text-white/60" />
         )}
         
         <div>
-          <p className="text-lg font-semibold text-foreground">
+          <p className="text-lg font-semibold text-white">
             {isDragActive ? 'Drop image here' : 'Upload Wingo Screenshot'}
           </p>
           <p className="text-sm text-muted-foreground mt-1">

@@ -18,22 +18,23 @@ export const WingoChart = ({ data }: WingoChartProps) => {
   }));
 
   return (
-    <div className="bg-card p-4 rounded-lg shadow-card">
-      <h3 className="text-lg font-semibold mb-4">Pattern Analysis (Last 20 Rounds)</h3>
+    <div className="bg-card p-4 rounded-lg shadow-premium border border-white/10">
+      <h3 className="text-lg font-semibold mb-4 text-white">Pattern Analysis (Last 20 Rounds)</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 20%)" />
           <XAxis 
             dataKey="round" 
-            stroke="hsl(var(--muted-foreground))"
+            stroke="hsl(0 0% 60%)"
             fontSize={12}
           />
-          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+          <YAxis stroke="hsl(0 0% 60%)" fontSize={12} />
           <Tooltip 
             contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))', 
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px'
+              backgroundColor: 'hsl(0 0% 5%)', 
+              border: '1px solid hsl(0 0% 20%)',
+              borderRadius: '8px',
+              color: 'hsl(0 0% 100%)'
             }}
           />
           <Legend />
