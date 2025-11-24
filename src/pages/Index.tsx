@@ -19,7 +19,7 @@ interface Message {
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([{
     role: 'assistant',
-    content: "🐺 Welcome to WOLF AI! I'm your expert Wingo color prediction analyst.\n\nUpload a screenshot of past Wingo rounds, and I'll analyze patterns to predict the next color with confidence. Let's beat the odds together!"
+    content: "🐺 **WOLF AI Ready**\n\nI'm your expert Wingo prediction analyst. Upload a clear screenshot of past Wingo rounds and I'll instantly analyze patterns and predict the next color.\n\n**What I analyze:**\n• Color streak patterns\n• Hot/cold number trends\n• Statistical probabilities\n• Betting recommendations\n\nUpload now to get started! 🎯"
   }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,35 +62,80 @@ const Index = () => {
   const getPrediction = async (userMessage: string) => {
     setIsLoading(true);
     try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('wingo-predict', {
+      console.log('Requesting prediction with history:', history.length, 'rounds');
+      
+      const { data, error } = await supabase.functions.invoke('wingo-predict', {
         body: {
           history,
           message: userMessage
         }
       });
+
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
+
       if (data?.error) {
-        throw new Error(data.error);
+        console.error('Function returned error:', data.error);
+        
+        // Handle specific error cases
+        if (data.error.includes('Rate limit')) {
+          toast({
+            title: 'Too Many Requests',
+            description: 'Please wait a moment before trying again.',
+            variant: 'destructive'
+          });
+        } else if (data.error.includes('credits')) {
+          toast({
+            title: 'AI Credits Needed',
+            description: 'Please add credits to continue using predictions.',
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: 'Prediction Error',
+            description: data.error,
+            variant: 'destructive'
+          });
+        }
+        
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `⚠️ ${data.error}\n\nPlease try again in a moment.`
+        }]);
+        return;
       }
+
+      if (!data?.prediction) {
+        throw new Error('No prediction received from AI');
+      }
+
+      console.log('Prediction received:', data.prediction);
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.prediction
       }]);
+      
+      toast({
+        title: 'Prediction Ready',
+        description: 'Expert analysis complete!'
+      });
+      
     } catch (error) {
       console.error('Prediction error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Could not get prediction';
+      
       toast({
         title: 'Prediction Failed',
-        description: error instanceof Error ? error.message : 'Could not get prediction',
+        description: errorMsg,
         variant: 'destructive'
       });
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm having trouble analyzing right now. Please try again in a moment."
+        content: `❌ Analysis failed: ${errorMsg}\n\nPlease try uploading a clearer screenshot or try again.`
       }]);
     } finally {
       setIsLoading(false);

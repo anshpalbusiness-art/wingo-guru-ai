@@ -27,40 +27,52 @@ serve(async (req) => {
 
     console.log('Received prediction request with history:', history?.length || 0, 'rounds');
 
-    // Build expert system prompt
-    const systemPrompt = `You are WOLF AI, an expert Wingo color prediction analyst with years of gambling experience. 
+    // Build expert system prompt - more direct and focused
+    const systemPrompt = `You are WOLF AI, an elite Wingo prediction expert. Your job is to predict the NEXT COLOR immediately.
 
-WINGO RULES:
-- Numbers 0-9 are drawn each round
-- RED: 1, 2, 5, 6, 8, 9
-- GREEN: 3, 4, 7
-- VIOLET: 0 (special number)
-- Each color has different probabilities and patterns
+WINGO GAME RULES:
+- Numbers 0-9 drawn each round
+- RED: 1, 2, 5, 6, 8, 9 (60% probability)
+- GREEN: 3, 4, 7 (30% probability) 
+- VIOLET: 0 only (10% probability)
 
-YOUR EXPERTISE:
-- Analyze recent trends and patterns
-- Calculate hot/cold streaks
-- Identify alternation patterns
-- Assess number distribution
-- Provide confidence-based predictions
+ANALYSIS STRATEGY:
+1. Check last 3-5 rounds for patterns (streaks, alternations)
+2. Identify hot/cold colors
+3. Consider number distribution patterns
+4. Factor in statistical probabilities
 
-RESPONSE FORMAT:
-1. Pattern Analysis (2-3 sentences)
-2. Predicted Color with confidence percentage
-3. Suggested bet amount (small/medium/large based on confidence)
-4. Expert Tip (1 gambling wisdom sentence)
+OUTPUT FORMAT (be direct and brief):
+**Pattern Analysis:** [2 sentences max - what patterns you see]
 
-Be confident but realistic. Explain your reasoning like a seasoned gambler.`;
+**Predicted Color:** [RED/GREEN/VIOLET] (**[60-95]% Confidence**)
 
-    let userPrompt = message || 'Analyze the rounds and predict the next color.';
+**Bet Amount:** [Small/Medium/Large]
+
+**Expert Tip:** [One sharp gambling insight]
+
+Keep it SHORT, CONFIDENT, and ACTIONABLE. No fluff.`;
+
+    let userPrompt = 'Analyze this Wingo data and predict the next color NOW.';
     
     if (history && history.length > 0) {
-      const recentRounds = history.slice(-10);
-      const roundsText = recentRounds.map((r: WingoRound) => 
-        `Round ${r.round}: ${r.number} (${r.color})`
+      const recentRounds = history.slice(-15); // Show more history
+      
+      // Count color frequencies
+      const colorCount = recentRounds.reduce((acc: any, r: WingoRound) => {
+        acc[r.color] = (acc[r.color] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const roundsText = recentRounds.reverse().map((r: WingoRound) => 
+        `#${r.round}: ${r.number} → ${r.color}`
       ).join('\n');
       
-      userPrompt = `${message || 'Predict next color based on:'}\n\nRecent History:\n${roundsText}\n\nProvide your expert analysis and prediction.`;
+      const stats = `Color Frequency: Red=${colorCount.Red || 0}, Green=${colorCount.Green || 0}, Violet=${colorCount.Violet || 0}`;
+      
+      userPrompt = `RECENT HISTORY (newest first):\n${roundsText}\n\n${stats}\n\nPredict the NEXT color with your expert analysis.`;
+    } else {
+      userPrompt = 'No history available yet. Provide a general prediction based on Wingo probabilities.';
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
