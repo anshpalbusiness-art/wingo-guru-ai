@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { User } from "lucide-react";
+import wolfLogo from "@/assets/wolf-logo.jpg";
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -17,12 +18,12 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
         : "bg-white/5 border-white/5 hover:border-white/10"
     )}>
       <div className={cn(
-        "flex-shrink-0 w-10 h-10 rounded-sm flex items-center justify-center border shadow-sm",
+        "flex-shrink-0 w-10 h-10 rounded-sm flex items-center justify-center border shadow-sm overflow-hidden",
         isAssistant 
           ? "bg-gradient-premium text-black border-white/30" 
           : "bg-black/80 text-white border-white/20"
       )}>
-        {isAssistant ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
+        {isAssistant ? <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" /> : <User className="w-5 h-5" />}
       </div>
       
       <div className="flex-1 space-y-2.5 min-w-0">
