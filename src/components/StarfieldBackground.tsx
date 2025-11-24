@@ -61,11 +61,11 @@ export const StarfieldBackground = () => {
         stars.push({
           x: Math.random() * canvas.width - canvas.width / 2,
           y: Math.random() * canvas.height - canvas.height / 2,
-          z: Math.random() * canvas.width + canvas.width * 0.2,  // Start further away
-          size: Math.random() * 1 + 0.3,  // Smaller stars
-          opacity: Math.random() * 0.6 + 0.3,
+          z: Math.random() * canvas.width * 0.8 + canvas.width * 0.1,  // Keep stars closer
+          size: Math.random() * 2 + 0.8,  // Larger base size
+          opacity: Math.random() * 0.5 + 0.5,  // Brighter stars
           twinkle: Math.random() * Math.PI * 2,
-          twinkleSpeed: Math.random() * 0.015 + 0.005,  // Slower twinkle
+          twinkleSpeed: Math.random() * 0.015 + 0.005,
           color: getStarColor(),
           layer,
         });
@@ -107,8 +107,8 @@ export const StarfieldBackground = () => {
         if (star.z <= 0) {
           star.x = Math.random() * canvas.width - canvas.width / 2;
           star.y = Math.random() * canvas.height - canvas.height / 2;
-          star.z = canvas.width + canvas.width * 0.2;
-          star.opacity = Math.random() * 0.6 + 0.3;
+          star.z = canvas.width * 0.9;  // Reset closer
+          star.opacity = Math.random() * 0.5 + 0.5;
           star.color = getStarColor();
         }
 
@@ -117,44 +117,41 @@ export const StarfieldBackground = () => {
         const py = star.y * k + centerY;
 
         if (px >= 0 && px <= canvas.width && py >= 0 && py <= canvas.height) {
-          const depth = 1 - star.z / canvas.width;
-          const size = Math.max(0.1, depth * star.size * 2);  // Ensure minimum positive size
-          const twinkleEffect = Math.sin(star.twinkle) * 0.2 + 0.8;  // Subtler twinkle
-          const opacity = Math.max(0, Math.min(1, depth * star.opacity * twinkleEffect));  // Clamp opacity
+          const depth = Math.max(0.1, 1 - star.z / canvas.width);  // Ensure minimum depth
+          const size = Math.max(0.5, depth * star.size * 3);  // Larger multiplier, min 0.5px
+          const twinkleEffect = Math.sin(star.twinkle) * 0.2 + 0.8;
+          const opacity = Math.max(0.1, Math.min(1, depth * star.opacity * twinkleEffect));
 
-          // Only draw if size and opacity are valid
-          if (size > 0 && opacity > 0) {
-            // Reduced glow - only for brighter stars
-            if (opacity > 0.4 && size * 2 > 0) {
-              const glowRadius = Math.max(0.1, size * 2);
-              const gradient = ctx.createRadialGradient(px, py, 0, px, py, glowRadius);
-              gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.4})`);
-              gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.15})`);
-              gradient.addColorStop(1, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, 0)`);
-              
-              ctx.fillStyle = gradient;
-              ctx.beginPath();
-              ctx.arc(px, py, glowRadius, 0, Math.PI * 2);
-              ctx.fill();
-            }
-
-            // Draw core
-            ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity})`;
+          // Draw glow for brighter stars
+          if (opacity > 0.3 && size > 1) {
+            const glowRadius = Math.max(1, size * 2.5);
+            const gradient = ctx.createRadialGradient(px, py, 0, px, py, glowRadius);
+            gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.5})`);
+            gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.2})`);
+            gradient.addColorStop(1, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, 0)`);
+            
+            ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.arc(px, py, size, 0, Math.PI * 2);
+            ctx.arc(px, py, glowRadius, 0, Math.PI * 2);
             ctx.fill();
+          }
 
-            // Only show trail for closest, fastest stars
-            if (depth > 0.7) {
-              const trailAlpha = (depth - 0.7) * 3.3 * opacity * 0.3;
-              const lineWidth = Math.max(0.1, size * 0.4);
-              ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${trailAlpha})`;
-              ctx.lineWidth = lineWidth;
-              ctx.beginPath();
-              ctx.moveTo(px, py);
-              ctx.lineTo(px - (px - centerX) * 0.02, py - (py - centerY) * 0.02);
-              ctx.stroke();
-            }
+          // Draw core
+          ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity})`;
+          ctx.beginPath();
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Trail for closest stars
+          if (depth > 0.6 && size > 1) {
+            const trailAlpha = Math.min(0.5, (depth - 0.6) * 2.5 * opacity * 0.4);
+            const lineWidth = Math.max(0.5, size * 0.5);
+            ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${trailAlpha})`;
+            ctx.lineWidth = lineWidth;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - (px - centerX) * 0.025, py - (py - centerY) * 0.025);
+            ctx.stroke();
           }
         }
       });
