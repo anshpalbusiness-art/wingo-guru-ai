@@ -182,7 +182,7 @@ const Index = () => {
               <div className="border-t border-white/10 p-4 bg-black/40">
                 <div className="flex gap-3">
                   <Input value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Ask WOLF AI for expert predictions..." disabled={isLoading} className="flex-1 h-12 bg-black/60 border-white/20 text-white placeholder:text-muted-foreground focus:border-white/50 transition-colors" />
-                  <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="h-12 px-6 bg-gradient-premium text-black hover:shadow-glow border border-white/30 font-semibold transition-all hover:scale-105">
+                  <Button onClick={handleSend} disabled={isLoading || !input.trim()} className={cn("h-12 px-6 bg-gradient-premium text-black hover:shadow-glow border border-white/30 font-semibold transition-all hover:scale-105", input.trim() && !isLoading && "animate-pulse-glow")}>
                     <Send className="w-4 h-4 mr-2" />
                     Send
                   </Button>
