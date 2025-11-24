@@ -122,10 +122,10 @@ const Index = () => {
                   <img src={wolfLogo} alt="WOLF AI Logo" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white tracking-tight leading-none">
+                  <h1 className="text-3xl font-bold text-white tracking-tight leading-none font-display">
                     WOLF AI
                   </h1>
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Expert Wingo Predictions</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1 font-medium">Expert Wingo Predictions</p>
                 </div>
               </div>
               
@@ -145,7 +145,7 @@ const Index = () => {
               <div className="border-b border-white/10 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">AI Analysis</h2>
+                    <h2 className="text-lg font-semibold text-white font-display">AI Analysis</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {history.length > 0 ? `${history.length} rounds analyzed` : 'Upload screenshot to begin'}
                     </p>
@@ -164,8 +164,8 @@ const Index = () => {
                     <div className="flex-shrink-0 w-10 h-10 rounded-sm overflow-hidden bg-gradient-premium flex items-center justify-center animate-glow border border-white/20">
                       <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" />
                     </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm mb-2 text-white">WOLF AI</div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm mb-2 text-white font-display">WOLF AI</div>
                       <div className="flex gap-1.5">
                         <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{
                       animationDelay: '0ms'
@@ -199,7 +199,7 @@ const Index = () => {
             {/* Upload Section */}
             <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm p-6">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-white">Upload Data</h3>
+                <h3 className="text-lg font-semibold text-white font-display">Upload Data</h3>
                 <p className="text-xs text-muted-foreground mt-1">Screenshot of Wingo rounds</p>
               </div>
               <ImageUpload onImageUpload={handleImageUpload} isProcessing={isProcessing} />
@@ -210,7 +210,7 @@ const Index = () => {
                 {/* History */}
                 <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm">
                   <div className="border-b border-white/10 px-6 py-4">
-                    <h3 className="text-lg font-semibold text-white">Round History</h3>
+                    <h3 className="text-lg font-semibold text-white font-display">Round History</h3>
                     <p className="text-xs text-muted-foreground mt-1">Last {history.length} rounds</p>
                   </div>
                   <div className="p-6">
@@ -235,7 +235,7 @@ const Index = () => {
                 {/* Chart */}
                 <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm">
                   <div className="border-b border-white/10 px-6 py-4">
-                    <h3 className="text-lg font-semibold text-white">Trend Analysis</h3>
+                    <h3 className="text-lg font-semibold text-white font-display">Trend Analysis</h3>
                     <p className="text-xs text-muted-foreground mt-1">Color frequency patterns</p>
                   </div>
                   <div className="p-6">
@@ -249,7 +249,7 @@ const Index = () => {
               <div className="flex items-start gap-3">
                 <span className="text-xl">⚠️</span>
                 <div>
-                  <p className="font-bold text-white mb-2 uppercase tracking-wider">Important Notice</p>
+                  <p className="font-bold text-white mb-2 uppercase tracking-wider font-display">Important Notice</p>
                   <p className="text-muted-foreground leading-relaxed">
                     All predictions are for entertainment purposes only. Gambling involves substantial risk. 
                     This is not financial advice. Always play responsibly and within your means.

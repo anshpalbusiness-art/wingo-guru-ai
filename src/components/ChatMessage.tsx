@@ -28,7 +28,7 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
       
       <div className="flex-1 space-y-2.5 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-white uppercase tracking-wider">
+          <span className="font-bold text-sm text-white uppercase tracking-wider font-display">
             {isAssistant ? 'WOLF AI' : 'You'}
           </span>
           {isAssistant && (
