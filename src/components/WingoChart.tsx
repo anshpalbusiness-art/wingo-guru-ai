@@ -18,46 +18,58 @@ export const WingoChart = ({ data }: WingoChartProps) => {
   }));
 
   return (
-    <div className="bg-card p-4 rounded-lg shadow-premium border border-white/10">
-      <h3 className="text-lg font-semibold mb-4 text-white">Pattern Analysis (Last 20 Rounds)</h3>
-      <ResponsiveContainer width="100%" height={300}>
+    <div className="w-full">
+      <ResponsiveContainer width="100%" height={240}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 20%)" />
           <XAxis 
             dataKey="round" 
             stroke="hsl(0 0% 60%)"
-            fontSize={12}
+            fontSize={10}
+            tick={{ fill: 'hsl(0 0% 60%)' }}
           />
-          <YAxis stroke="hsl(0 0% 60%)" fontSize={12} />
+          <YAxis 
+            stroke="hsl(0 0% 60%)" 
+            fontSize={10}
+            tick={{ fill: 'hsl(0 0% 60%)' }}
+          />
           <Tooltip 
             contentStyle={{ 
               backgroundColor: 'hsl(0 0% 5%)', 
               border: '1px solid hsl(0 0% 20%)',
-              borderRadius: '8px',
-              color: 'hsl(0 0% 100%)'
+              borderRadius: '6px',
+              color: 'hsl(0 0% 100%)',
+              fontSize: '12px'
             }}
           />
-          <Legend />
+          <Legend 
+            wrapperStyle={{
+              fontSize: '11px'
+            }}
+          />
           <Line 
             type="monotone" 
             dataKey="redCount" 
             stroke="hsl(var(--wingo-red))" 
             strokeWidth={2}
-            name="Red Streak"
+            name="Red"
+            dot={{ r: 3 }}
           />
           <Line 
             type="monotone" 
             dataKey="greenCount" 
             stroke="hsl(var(--wingo-green))" 
             strokeWidth={2}
-            name="Green Streak"
+            name="Green"
+            dot={{ r: 3 }}
           />
           <Line 
             type="monotone" 
             dataKey="violetCount" 
             stroke="hsl(var(--wingo-violet))" 
             strokeWidth={2}
-            name="Violet Streak"
+            name="Violet"
+            dot={{ r: 3 }}
           />
         </LineChart>
       </ResponsiveContainer>
