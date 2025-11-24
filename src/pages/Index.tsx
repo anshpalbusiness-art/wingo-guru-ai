@@ -33,17 +33,22 @@ const Index = () => {
     try {
       const rounds = await extractWingoData(file);
       setHistory(rounds);
+      
+      // Add user message
       setMessages(prev => [...prev, {
         role: 'user',
         content: `Uploaded screenshot with ${rounds.length} rounds`
-      }, {
-        role: 'assistant',
-        content: `Perfect! I've extracted ${rounds.length} rounds from your screenshot. Check out the data below. Ready for my expert prediction?`
       }]);
+      
       toast({
         title: 'Screenshot Processed',
         description: `Extracted ${rounds.length} rounds successfully!`
       });
+      
+      // Automatically get prediction
+      setIsProcessing(false);
+      await getPrediction('Analyze this data and give me your expert prediction');
+      
     } catch (error) {
       console.error('Image processing error:', error);
       toast({
@@ -51,7 +56,6 @@ const Index = () => {
         description: error instanceof Error ? error.message : 'Could not process image',
         variant: 'destructive'
       });
-    } finally {
       setIsProcessing(false);
     }
   };
