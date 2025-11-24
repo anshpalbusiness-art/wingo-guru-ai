@@ -5,6 +5,7 @@ import { ChatMessage } from '@/components/ChatMessage';
 import { ImageUpload } from '@/components/ImageUpload';
 import { WingoChart } from '@/components/WingoChart';
 import { WingoHistory } from '@/components/WingoHistory';
+import { StarfieldBackground } from '@/components/StarfieldBackground';
 import { extractWingoData, WingoRound } from '@/utils/ocr';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -107,9 +108,11 @@ const Index = () => {
       handleSend();
     }
   };
-  return <div className="min-h-screen bg-gradient-dark flex flex-col">
+  return <div className="min-h-screen bg-black flex flex-col relative">
+      <StarfieldBackground />
+      
       {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/40 backdrop-blur-xl">
+      <div className="relative border-b border-white/10 bg-black/40 backdrop-blur-xl z-10">
         <div className="absolute inset-0 bg-gradient-glow pointer-events-none" />
         <header className="relative">
           <div className="max-w-7xl mx-auto px-6 py-5">
@@ -132,7 +135,7 @@ const Index = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 relative z-10">
         <div className="grid lg:grid-cols-[1fr_380px] gap-8 h-full">
           {/* Main Chat Section */}
           <div className="flex flex-col gap-6">
