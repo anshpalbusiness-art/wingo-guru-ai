@@ -35,7 +35,7 @@ export const StarfieldBackground = () => {
     let animationFrameId: number;
     let stars: Star[] = [];
     let shootingStars: ShootingStar[] = [];
-    const numStars = 500;
+    const numStars = 200;  // Reduced from 500
     let time = 0;
 
     const resizeCanvas = () => {
@@ -61,11 +61,11 @@ export const StarfieldBackground = () => {
         stars.push({
           x: Math.random() * canvas.width - canvas.width / 2,
           y: Math.random() * canvas.height - canvas.height / 2,
-          z: Math.random() * canvas.width,
-          size: Math.random() * 1.5 + 0.5,
-          opacity: Math.random() * 0.8 + 0.2,
+          z: Math.random() * canvas.width + canvas.width * 0.2,  // Start further away
+          size: Math.random() * 1 + 0.3,  // Smaller stars
+          opacity: Math.random() * 0.6 + 0.3,
           twinkle: Math.random() * Math.PI * 2,
-          twinkleSpeed: Math.random() * 0.02 + 0.01,
+          twinkleSpeed: Math.random() * 0.015 + 0.005,  // Slower twinkle
           color: getStarColor(),
           layer,
         });
@@ -73,7 +73,7 @@ export const StarfieldBackground = () => {
     };
 
     const createShootingStar = () => {
-      if (Math.random() > 0.98) {
+      if (Math.random() > 0.995) {  // Less frequent shooting stars
         const angle = Math.random() * Math.PI / 4 + Math.PI / 6;
         const speed = Math.random() * 8 + 12;
         shootingStars.push({
@@ -91,8 +91,8 @@ export const StarfieldBackground = () => {
     const animate = () => {
       time += 0.01;
       
-      // Clear with slight trails for smoother effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      // Clear with more opacity for sharper look
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const centerX = canvas.width / 2;
@@ -100,15 +100,15 @@ export const StarfieldBackground = () => {
 
       // Draw stars with layers
       stars.forEach((star) => {
-        const layerSpeed = 0.15 * (star.layer + 1);
+        const layerSpeed = 0.1 * (star.layer + 1);  // Slower, more distinct layers
         star.z -= layerSpeed;
         star.twinkle += star.twinkleSpeed;
 
         if (star.z <= 0) {
           star.x = Math.random() * canvas.width - canvas.width / 2;
           star.y = Math.random() * canvas.height - canvas.height / 2;
-          star.z = canvas.width;
-          star.opacity = Math.random() * 0.8 + 0.2;
+          star.z = canvas.width + canvas.width * 0.2;
+          star.opacity = Math.random() * 0.6 + 0.3;
           star.color = getStarColor();
         }
 
@@ -118,20 +118,22 @@ export const StarfieldBackground = () => {
 
         if (px >= 0 && px <= canvas.width && py >= 0 && py <= canvas.height) {
           const depth = 1 - star.z / canvas.width;
-          const size = depth * star.size * 2.5;
-          const twinkleEffect = Math.sin(star.twinkle) * 0.3 + 0.7;
+          const size = depth * star.size * 2;
+          const twinkleEffect = Math.sin(star.twinkle) * 0.2 + 0.8;  // Subtler twinkle
           const opacity = depth * star.opacity * twinkleEffect;
 
-          // Draw glow
-          const gradient = ctx.createRadialGradient(px, py, 0, px, py, size * 3);
-          gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.8})`);
-          gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.3})`);
-          gradient.addColorStop(1, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, 0)`);
-          
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(px, py, size * 3, 0, Math.PI * 2);
-          ctx.fill();
+          // Reduced glow - only for brighter stars
+          if (opacity > 0.4) {
+            const gradient = ctx.createRadialGradient(px, py, 0, px, py, size * 2);
+            gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.4})`);
+            gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.15})`);
+            gradient.addColorStop(1, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, 0)`);
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(px, py, size * 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
 
           // Draw core
           ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity})`;
@@ -139,14 +141,14 @@ export const StarfieldBackground = () => {
           ctx.arc(px, py, size, 0, Math.PI * 2);
           ctx.fill();
 
-          // Add subtle trail for closer stars
-          if (depth > 0.5) {
-            const trailAlpha = (depth - 0.5) * 2 * opacity * 0.4;
+          // Only show trail for closest, fastest stars
+          if (depth > 0.7) {
+            const trailAlpha = (depth - 0.7) * 3.3 * opacity * 0.3;
             ctx.strokeStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${trailAlpha})`;
-            ctx.lineWidth = size * 0.5;
+            ctx.lineWidth = size * 0.4;
             ctx.beginPath();
             ctx.moveTo(px, py);
-            ctx.lineTo(px - (px - centerX) * 0.03, py - (py - centerY) * 0.03);
+            ctx.lineTo(px - (px - centerX) * 0.02, py - (py - centerY) * 0.02);
             ctx.stroke();
           }
         }
