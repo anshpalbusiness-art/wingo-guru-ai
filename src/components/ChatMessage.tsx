@@ -11,21 +11,32 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
 
   return (
     <div className={cn(
-      "flex gap-4 p-4 rounded-lg animate-in fade-in slide-in-from-bottom-2 border",
-      isAssistant ? "bg-black/40 border-white/10" : "bg-white/5 border-white/5"
+      "flex gap-4 p-5 rounded-lg animate-fade-in border transition-all",
+      isAssistant 
+        ? "bg-black/40 border-white/10 hover:border-white/20" 
+        : "bg-white/5 border-white/5 hover:border-white/10"
     )}>
       <div className={cn(
-        "flex-shrink-0 w-8 h-8 rounded-sm flex items-center justify-center border",
-        isAssistant ? "bg-gradient-premium text-black border-white/30" : "bg-black text-white border-white/20"
+        "flex-shrink-0 w-10 h-10 rounded-sm flex items-center justify-center border shadow-sm",
+        isAssistant 
+          ? "bg-gradient-premium text-black border-white/30" 
+          : "bg-black/80 text-white border-white/20"
       )}>
-        {isAssistant ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+        {isAssistant ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
       </div>
       
-      <div className="flex-1 space-y-2">
-        <div className="font-semibold text-sm text-white">
-          {isAssistant ? 'WOLF AI' : 'You'}
+      <div className="flex-1 space-y-2.5 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-sm text-white uppercase tracking-wider">
+            {isAssistant ? 'WOLF AI' : 'You'}
+          </span>
+          {isAssistant && (
+            <span className="text-[10px] text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/10">
+              EXPERT
+            </span>
+          )}
         </div>
-        <div className="text-foreground whitespace-pre-wrap leading-relaxed">
+        <div className="text-foreground whitespace-pre-wrap leading-relaxed text-sm">
           {content}
         </div>
       </div>

@@ -28,32 +28,39 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
     <div
       {...getRootProps()}
       className={cn(
-        "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all bg-black/40",
-        isDragActive ? "border-white bg-white/5" : "border-white/20 hover:border-white/50",
+        "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all bg-black/40 hover:bg-black/60",
+        isDragActive ? "border-white bg-white/5 scale-[1.02]" : "border-white/20 hover:border-white/40",
         isProcessing && "opacity-50 cursor-not-allowed"
       )}
     >
       <input {...getInputProps()} />
       
       <div className="flex flex-col items-center gap-3">
-        {isDragActive ? (
-          <ImageIcon className="w-12 h-12 text-white animate-bounce" />
-        ) : (
-          <Upload className="w-12 h-12 text-white/60" />
-        )}
+        <div className={cn(
+          "w-16 h-16 rounded-sm border-2 border-white/20 flex items-center justify-center transition-all",
+          isDragActive && "border-white scale-110"
+        )}>
+          {isDragActive ? (
+            <ImageIcon className="w-8 h-8 text-white animate-bounce" />
+          ) : (
+            <Upload className="w-8 h-8 text-white/60" />
+          )}
+        </div>
         
         <div>
-          <p className="text-lg font-semibold text-white">
-            {isDragActive ? 'Drop image here' : 'Upload Wingo Screenshot'}
+          <p className="text-sm font-semibold text-white mb-1">
+            {isDragActive ? 'Drop Screenshot Here' : 'Upload Screenshot'}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Drag & drop or click to select
+          <p className="text-xs text-muted-foreground">
+            Drag & drop or click to browse
           </p>
         </div>
         
-        <p className="text-xs text-muted-foreground">
-          Supports PNG, JPG, JPEG, WEBP
-        </p>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
+          <span className="px-2 py-1 bg-white/5 rounded border border-white/10">PNG</span>
+          <span className="px-2 py-1 bg-white/5 rounded border border-white/10">JPG</span>
+          <span className="px-2 py-1 bg-white/5 rounded border border-white/10">WEBP</span>
+        </div>
       </div>
     </div>
   );
