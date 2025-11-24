@@ -130,14 +130,14 @@ const Index = () => {
         <header className="relative border-b border-border backdrop-blur-sm">
           <div className="container mx-auto px-4 py-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-glow">
-                <Sparkles className="w-6 h-6 text-primary-foreground" />
+              <div className="w-12 h-12 rounded-sm bg-gradient-premium flex items-center justify-center shadow-premium border border-white/20">
+                <Sparkles className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-wingo-violet bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold text-white tracking-tight">
                   WOLF AI
                 </h1>
-                <p className="text-sm text-muted-foreground">Expert Wingo Prediction System</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Expert Prediction System</p>
               </div>
             </div>
           </div>
@@ -149,21 +149,21 @@ const Index = () => {
           {/* Main chat area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Chat messages */}
-            <div className="bg-card rounded-xl shadow-card p-6 min-h-[500px] max-h-[600px] overflow-y-auto space-y-4">
+            <div className="bg-card rounded-lg shadow-premium p-6 min-h-[500px] max-h-[600px] overflow-y-auto space-y-4 border border-white/10">
               {messages.map((msg, index) => (
                 <ChatMessage key={index} role={msg.role} content={msg.content} />
               ))}
               {isLoading && (
-                <div className="flex gap-4 p-4 rounded-lg bg-card">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center animate-pulse">
-                    <Sparkles className="w-4 h-4 text-primary-foreground" />
+                <div className="flex gap-4 p-4 rounded-lg bg-card border border-white/5">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-sm bg-gradient-premium flex items-center justify-center animate-pulse border border-white/20">
+                    <Sparkles className="w-4 h-4 text-black" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-sm mb-2">WOLF AI</div>
+                    <div className="font-semibold text-sm mb-2 text-white">WOLF AI</div>
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ const Index = () => {
             </div>
 
             {/* Input area */}
-            <div className="bg-card rounded-xl shadow-card p-4">
+            <div className="bg-card rounded-lg shadow-premium p-4 border border-white/10">
               <div className="flex gap-3">
                 <Input
                   value={input}
@@ -179,12 +179,12 @@ const Index = () => {
                   onKeyPress={handleKeyPress}
                   placeholder="Ask WOLF AI for predictions..."
                   disabled={isLoading}
-                  className="flex-1 bg-background border-border"
+                  className="flex-1 bg-black border-white/20 text-white placeholder:text-muted-foreground focus:border-white"
                 />
                 <Button 
                   onClick={handleSend} 
                   disabled={isLoading || !input.trim()}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-gradient-premium text-black hover:shadow-glow border border-white/30"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
@@ -209,8 +209,8 @@ const Index = () => {
             )}
 
             {/* Disclaimer */}
-            <div className="bg-card/50 backdrop-blur-sm p-4 rounded-lg border border-border text-xs text-muted-foreground">
-              <p className="font-semibold mb-2">⚠️ Disclaimer</p>
+            <div className="bg-black/50 backdrop-blur-sm p-4 rounded-lg border border-white/20 text-xs text-muted-foreground">
+              <p className="font-semibold mb-2 text-white">⚠️ Disclaimer</p>
               <p>Predictions are for entertainment purposes only. Gambling involves risk. This is not financial advice. Play responsibly.</p>
             </div>
           </div>
