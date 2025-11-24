@@ -158,8 +158,8 @@ const Index = () => {
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-[400px] max-h-[500px]">
                 {messages.map((msg, index) => <ChatMessage key={index} role={msg.role} content={msg.content} />)}
                 {isLoading && <div className="flex gap-4 p-5 rounded-lg bg-black/40 border border-white/10 animate-fade-in">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-sm bg-gradient-premium flex items-center justify-center animate-pulse border border-white/20">
-                      <Sparkles className="w-5 h-5 text-black" />
+                    <div className="flex-shrink-0 w-10 h-10 rounded-sm overflow-hidden bg-gradient-premium flex items-center justify-center animate-glow border border-white/20">
+                      <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold text-sm mb-2 text-white">WOLF AI</div>

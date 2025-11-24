@@ -20,7 +20,7 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
       <div className={cn(
         "flex-shrink-0 w-10 h-10 rounded-sm flex items-center justify-center border shadow-sm overflow-hidden",
         isAssistant 
-          ? "bg-gradient-premium text-black border-white/30" 
+          ? "bg-gradient-premium text-black border-white/30 animate-glow" 
           : "bg-black/80 text-white border-white/20"
       )}>
         {isAssistant ? <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" /> : <User className="w-5 h-5" />}
