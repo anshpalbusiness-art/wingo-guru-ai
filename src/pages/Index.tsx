@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import wolfLogo from '@/assets/wolf-logo.jpg';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -114,8 +115,8 @@ const Index = () => {
           <div className="max-w-7xl mx-auto px-6 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-sm bg-gradient-premium flex items-center justify-center shadow-premium border border-white/30">
-                  <Sparkles className="w-7 h-7 text-black" />
+                <div className="w-14 h-14 rounded-sm overflow-hidden shadow-premium border border-white/30">
+                  <img src={wolfLogo} alt="WOLF AI Logo" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-white tracking-tight leading-none">
