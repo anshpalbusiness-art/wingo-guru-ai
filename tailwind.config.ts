@@ -53,6 +53,10 @@ export default {
           violet: "hsl(var(--wingo-violet))",
         },
       },
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       backgroundImage: {
         'gradient-dark': 'var(--gradient-dark)',
         'gradient-card': 'var(--gradient-card)',
