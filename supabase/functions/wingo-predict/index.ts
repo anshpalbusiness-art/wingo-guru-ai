@@ -28,51 +28,63 @@ serve(async (req) => {
     console.log('Received prediction request with history:', history?.length || 0, 'rounds');
 
     // Build expert system prompt - more direct and focused
-    const systemPrompt = `You are WOLF AI, an elite Wingo prediction expert. Your job is to predict the NEXT COLOR immediately.
+    const systemPrompt = `You are WOLF AI, an elite Wingo prediction expert. Analyze patterns and predict BOTH color AND number size.
 
 WINGO GAME RULES:
 - Numbers 0-9 drawn each round
-- RED: 1, 2, 5, 6, 8, 9 (60% probability)
-- GREEN: 3, 4, 7 (30% probability) 
-- VIOLET: 0 only (10% probability)
+- RED: 2, 4, 6, 8 (even red numbers)
+- GREEN: 1, 3, 5, 7, 9 (odd green numbers)
+- VIOLET: 0 only (special case, counts as SMALL)
+- BIG: Numbers 5-9
+- SMALL: Numbers 0-4
 
 ANALYSIS STRATEGY:
-1. Check last 3-5 rounds for patterns (streaks, alternations)
-2. Identify hot/cold colors
-3. Consider number distribution patterns
-4. Factor in statistical probabilities
+1. Recent streak patterns (last 3-5 rounds)
+2. Big/Small alternation trends
+3. Hot/cold color frequencies
+4. Number distribution patterns
+5. Statistical probability adjustments
 
-OUTPUT FORMAT (be direct and brief):
-**Pattern Analysis:** [2 sentences max - what patterns you see]
+OUTPUT FORMAT (keep it brief and expert):
+**Pattern Analysis:** [What key patterns emerge from recent rounds - 2 sentences max]
 
-**Predicted Color:** [RED/GREEN/VIOLET] (**[60-95]% Confidence**)
+**Color Prediction:** [RED/GREEN/VIOLET] (**[60-95]% Confidence**)
 
-**Bet Amount:** [Small/Medium/Large]
+**Size Prediction:** [BIG/SMALL] (**[60-95]% Confidence**)
 
-**Expert Tip:** [One sharp gambling insight]
+**Bet Suggestion:** [Conservative/Moderate/Aggressive] on [Color + Size combination]
 
-Keep it SHORT, CONFIDENT, and ACTIONABLE. No fluff.`;
+**Expert Tip:** [One sharp insight based on the data]
 
-    let userPrompt = 'Analyze this Wingo data and predict the next color NOW.';
+Be DIRECT, CONFIDENT, and ACTIONABLE.`;
+
+    let userPrompt = 'Analyze this Wingo data and predict BOTH the next color AND size (big/small).';
     
     if (history && history.length > 0) {
-      const recentRounds = history.slice(-15); // Show more history
+      const recentRounds = history.slice(-15);
       
-      // Count color frequencies
+      // Count color and size frequencies
       const colorCount = recentRounds.reduce((acc: any, r: WingoRound) => {
         acc[r.color] = (acc[r.color] || 0) + 1;
         return acc;
       }, {});
       
-      const roundsText = recentRounds.reverse().map((r: WingoRound) => 
-        `#${r.round}: ${r.number} → ${r.color}`
-      ).join('\n');
+      const sizeCount = recentRounds.reduce((acc: any, r: WingoRound) => {
+        const size = r.number >= 5 ? 'Big' : 'Small';
+        acc[size] = (acc[size] || 0) + 1;
+        return acc;
+      }, {});
       
-      const stats = `Color Frequency: Red=${colorCount.Red || 0}, Green=${colorCount.Green || 0}, Violet=${colorCount.Violet || 0}`;
+      const roundsText = recentRounds.reverse().map((r: WingoRound) => {
+        const size = r.number >= 5 ? 'BIG' : 'SMALL';
+        return `#${r.round}: ${r.number} → ${r.color} (${size})`;
+      }).join('\n');
       
-      userPrompt = `RECENT HISTORY (newest first):\n${roundsText}\n\n${stats}\n\nPredict the NEXT color with your expert analysis.`;
+      const stats = `Color Frequency: Red=${colorCount.Red || 0}, Green=${colorCount.Green || 0}, Violet=${colorCount.Violet || 0}\nSize Frequency: Big=${sizeCount.Big || 0}, Small=${sizeCount.Small || 0}`;
+      
+      userPrompt = `RECENT HISTORY (newest first):\n${roundsText}\n\n${stats}\n\nPredict the NEXT color AND size with expert analysis.`;
     } else {
-      userPrompt = 'No history available yet. Provide a general prediction based on Wingo probabilities.';
+      userPrompt = 'No history available. Provide general prediction based on Wingo probabilities for both color and size.';
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
