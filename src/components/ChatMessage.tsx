@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { User } from "lucide-react";
 import wolfLogo from "@/assets/wolf-logo.jpg";
+import ReactMarkdown from "react-markdown";
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -37,8 +38,17 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
             </span>
           )}
         </div>
-        <div className="text-foreground whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
-          {content}
+        <div className="text-foreground leading-relaxed text-xs sm:text-sm prose prose-invert prose-sm max-w-none">
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+              strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
+              ul: ({ children }) => <ul className="list-disc pl-4 space-y-1">{children}</ul>,
+              li: ({ children }) => <li>{children}</li>,
+            }}
+          >
+            {content}
+          </ReactMarkdown>
         </div>
       </div>
     </div>
