@@ -21,11 +21,15 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
   try {
     console.log('Starting OCR processing...');
     
+    // Use CDN for worker to avoid path issues on mobile/deployments
     const { data: { text } } = await Tesseract.recognize(
       imageFile,
       'eng',
       {
         logger: (m) => console.log(m),
+        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.0/dist/worker.min.js',
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.0/tesseract-core.wasm.js',
+        errorHandler: (err) => console.error('Tesseract Internal Error:', err)
       }
     );
 
@@ -167,7 +171,9 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
     console.log('Final extracted rounds:', rounds);
     
     if (rounds.length === 0) {
-      throw new Error('No valid Wingo numbers found. Please ensure screenshot shows the results (0-9).');
+      // Log the text to see what we actually got
+      console.log('Raw OCR Text:', text);
+      throw new Error('No valid numbers (0-9) found in screenshot. Please crop to just the results.');
     }
 
     // Ensure we don't have duplicates and sort
@@ -177,6 +183,11 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
   } catch (error) {
     console.error('OCR Error:', error);
-    throw new Error('Failed to process image. Please ensure the image is clear and shows Wingo round data.');
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    // If it's a Tesseract error, it might be network/worker related
+    if (msg.includes('worker') || msg.includes('network')) {
+         throw new Error('OCR Engine failed to load. Please check internet connection.');
+    }
+    throw error; // Re-throw specific errors (like "No numbers found")
   }
 };
