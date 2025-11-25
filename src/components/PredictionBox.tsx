@@ -28,8 +28,8 @@ export const PredictionBox = ({ prediction, isLoading = false }: PredictionBoxPr
 
   const getSizeClass = (size: string) => {
     return size.toLowerCase() === 'big'
-      ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-      : 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      ? 'bg-white/10 text-white border-white/30'
+      : 'bg-white/5 text-white/90 border-white/20';
   };
 
   return (
