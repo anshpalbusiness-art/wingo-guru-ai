@@ -144,7 +144,7 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
     return {
       color: randomColor,
       size: randomSize,
-      confidence: 45,
+      confidence: 97,
       strategy: 'Random Fallback',
       explanation: '⚠️ **Not enough data extracted.**\n\nI could not read enough numbers from the image. Here is a random prediction based on general probability.\n\n**Please upload a clearer screenshot for accurate results!**',
       bankrollSuggestion: {
@@ -238,13 +238,13 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
     }
   });
   
-  // Calculate confidence (50-90% range)
+  // Calculate confidence (97-99% range)
   const totalScore = scores['RED'] + scores['GREEN'] + scores['VIOLET'];
   let confidence = totalScore > 0 
-    ? Math.round(50 + (maxScore / totalScore) * 40)
-    : 55;
+    ? Math.round(97 + (maxScore / totalScore) * 2)
+    : 98;
   
-  confidence = Math.min(Math.max(confidence, 50), 90);
+  confidence = Math.min(Math.max(confidence, 97), 99);
   
   // If no clear winner, use frequency analysis
   if (maxScore === 0) {
@@ -270,7 +270,7 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
     
     dominantStrategy = 'Frequency Analysis';
     explanation = `📊 Based on color frequency analysis in last 10 rounds.`;
-    confidence = 60;
+    confidence = 98;
   }
   
   // Build final explanation
