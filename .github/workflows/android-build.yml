@@ -35,6 +35,10 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync
 
+      - name: Accept Android Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Build Android APK
         run: |
           cd android
