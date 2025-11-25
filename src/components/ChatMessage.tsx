@@ -13,44 +13,56 @@ export const ChatMessage = ({ role, content }: ChatMessageProps) => {
 
   return (
     <div className={cn(
-      "flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-lg animate-fade-in border transition-all",
-      isAssistant 
-        ? "bg-black/40 border-white/10 hover:border-white/20" 
-        : "bg-white/5 border-white/5 hover:border-white/10"
+      "flex w-full animate-fade-in gap-3 md:gap-4",
+      isAssistant ? "justify-start" : "justify-end"
     )}>
-      <div className={cn(
-        "flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-sm flex items-center justify-center border shadow-sm overflow-hidden",
-        isAssistant 
-          ? "bg-gradient-premium text-black border-white/30 animate-glow" 
-          : "bg-black/80 text-white border-white/20"
-      )}>
-        {isAssistant ? <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />}
-      </div>
-      
-      <div className="flex-1 space-y-2 sm:space-y-2.5 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-xs sm:text-sm text-white uppercase tracking-wider font-display">
-            {isAssistant ? 'WOLF AI' : 'You'}
-          </span>
-          {isAssistant && (
-            <span className="text-[9px] sm:text-[10px] text-muted-foreground bg-white/5 px-1.5 sm:px-2 py-0.5 rounded border border-white/10">
-              EXPERT
-            </span>
-          )}
+      {/* AI Avatar (Left) */}
+      {isAssistant && (
+        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10 mt-1 self-end mb-1">
+           <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" />
         </div>
-        <div className="text-foreground leading-relaxed text-xs sm:text-sm prose prose-invert prose-sm max-w-none">
+      )}
+      
+      {/* Message Bubble */}
+      <div className={cn(
+        "relative max-w-[85%] sm:max-w-[75%] px-5 py-3.5 shadow-lg transition-all text-sm leading-relaxed group",
+        isAssistant 
+          ? "rounded-2xl rounded-bl-none bg-gradient-to-br from-white/10 to-white/5 border border-white/10 text-slate-100 backdrop-blur-md" 
+          : "rounded-2xl rounded-br-none bg-gradient-to-br from-white to-slate-200 text-black font-medium shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+      )}>
+        {/* Content */}
+        <div className={cn(
+            "prose prose-sm max-w-none break-words",
+            isAssistant ? "prose-invert" : "text-black prose-headings:text-black prose-strong:text-black"
+        )}>
           <ReactMarkdown
             components={{
-              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-              strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
-              ul: ({ children }) => <ul className="list-disc pl-4 space-y-1">{children}</ul>,
+              p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+              strong: ({ children }) => <strong className={isAssistant ? "font-bold text-white/90" : "font-bold text-black"}>{children}</strong>,
+              ul: ({ children }) => <ul className={cn("list-disc pl-4 space-y-1 my-2", isAssistant ? "text-white/80" : "text-black/80")}>{children}</ul>,
               li: ({ children }) => <li>{children}</li>,
+              code: ({ children }) => <code className={cn("px-1.5 py-0.5 rounded font-mono text-xs border", isAssistant ? "bg-black/30 border-white/10" : "bg-black/5 border-black/10")}>{children}</code>
             }}
           >
             {content}
           </ReactMarkdown>
         </div>
+        
+        {/* Timestamp/Status (Optional, visible on hover) */}
+        <div className={cn(
+            "absolute -bottom-5 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap",
+            isAssistant ? "left-0" : "right-0"
+        )}>
+            {isAssistant ? "AI Analyst" : "You"}
+        </div>
       </div>
+
+      {/* User Avatar (Right) */}
+      {!isAssistant && (
+        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-white to-slate-300 flex items-center justify-center border border-white/20 mt-1 self-end mb-1 text-black shadow-lg">
+          <User className="w-5 h-5" />
+        </div>
+      )}
     </div>
   );
 };

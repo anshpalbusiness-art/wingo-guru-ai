@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
@@ -15,51 +15,61 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
     }
   }, [onImageUpload]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp']
     },
     maxFiles: 1,
-    disabled: isProcessing
+    disabled: isProcessing,
+    noClick: true // We will handle click manually to be safe on all devices
   });
 
   return (
     <div
       {...getRootProps()}
+      onClick={open}
       className={cn(
-        "border-2 border-dashed rounded-lg p-4 sm:p-6 text-center cursor-pointer transition-all bg-black/40 hover:bg-black/60 touch-manipulation",
-        isDragActive ? "border-white bg-white/5 scale-[1.02]" : "border-white/20 hover:border-white/40",
+        "group relative border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 bg-gradient-to-b from-white/5 to-transparent",
+        isDragActive ? "border-blue-500 bg-blue-500/5 scale-[1.01]" : "border-white/20 hover:border-white/40 hover:bg-white/5",
         isProcessing && "opacity-50 cursor-not-allowed"
       )}
     >
       <input {...getInputProps()} />
       
-      <div className="flex flex-col items-center gap-2.5 sm:gap-3">
+      <div className="flex flex-col items-center gap-3">
         <div className={cn(
-          "w-14 h-14 sm:w-16 sm:h-16 rounded-sm border-2 border-white/20 flex items-center justify-center transition-all",
-          isDragActive && "border-white scale-110"
+          "w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all group-hover:scale-110 group-hover:border-white/20 group-hover:bg-white/10",
+          isDragActive && "bg-blue-500/20 border-blue-500/50"
         )}>
-          {isDragActive ? (
-            <ImageIcon className="w-7 h-7 sm:w-8 sm:h-8 text-white animate-bounce" />
+          {isProcessing ? (
+             <Loader2 className="w-5 h-5 text-white animate-spin" />
+          ) : isDragActive ? (
+            <ImageIcon className="w-5 h-5 text-blue-400 animate-bounce" />
           ) : (
-            <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-white/60" />
+            <Upload className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
           )}
         </div>
         
-        <div>
-          <p className="text-xs sm:text-sm font-semibold text-white mb-1">
-            {isDragActive ? 'Drop Screenshot Here' : 'Upload Screenshot'}
+        <div className="space-y-2 w-full">
+          <p className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+            {isDragActive ? 'Drop it!' : 'Upload Screenshot'}
           </p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">
-            Tap or drag & drop
+          
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              open();
+            }}
+            className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium text-white border border-white/10 transition-colors md:hidden"
+          >
+            Select Image
+          </button>
+
+          <p className="text-xs text-muted-foreground hidden md:block">
+            or drag and drop screenshot
           </p>
-        </div>
-        
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-muted-foreground mt-1">
-          <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white/5 rounded border border-white/10">PNG</span>
-          <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white/5 rounded border border-white/10">JPG</span>
-          <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white/5 rounded border border-white/10">WEBP</span>
         </div>
       </div>
     </div>

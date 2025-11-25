@@ -1,21 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ImageUpload } from '@/components/ImageUpload';
-import { WingoChart } from '@/components/WingoChart';
-import { WingoHistory } from '@/components/WingoHistory';
 import { StarfieldBackground } from '@/components/StarfieldBackground';
+import { HelpPricingSidebar } from '@/components/HelpPricingSidebar';
+import { PredictionBox } from '@/components/PredictionBox';
 import { extractWingoData, WingoRound } from '@/utils/ocr';
+import { generatePrediction } from '@/utils/predictionEngine';
+import { generateChatResponse } from '@/utils/chatEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, LogIn, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import wolfLogo from '@/assets/wolf-logo.jpg';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([{
     role: 'assistant',
@@ -25,9 +31,55 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [history, setHistory] = useState<WingoRound[]>([]);
+  const [prediction, setPrediction] = useState<{ color: string; size: string; confidence: number } | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [activeTab, setActiveTab] = useState<'chat' | 'tools'>('chat');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  
   const {
     toast
   } = useToast();
+  const navigate = useNavigate();
+
+  // Auto scroll to bottom of chat
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeTab]);
+  
+  // Switch to chat tab automatically when sending a message
+  useEffect(() => {
+    if (messages.length > 1) {
+       // Only switch if it's not the initial message
+       setActiveTab('chat');
+    }
+  }, [messages.length]);
+
+  // Check authentication status
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    };
+
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: 'Signed Out',
+      description: 'You have been signed out successfully.',
+    });
+    navigate('/auth');
+  };
   const handleImageUpload = async (file: File) => {
     setIsProcessing(true);
     try {
@@ -45,9 +97,28 @@ const Index = () => {
         description: `Extracted ${rounds.length} rounds successfully!`
       });
       
-      // Automatically get prediction
+      // Generate prediction using local engine (no API needed!)
+      const predictionResult = generatePrediction(rounds);
+      
+      // Update prediction state
+      setPrediction({
+        color: predictionResult.color,
+        size: predictionResult.size,
+        confidence: predictionResult.confidence
+      });
+      
+      // Add AI explanation to chat with DEBUG info
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🔍 **Analysis Complete**\n\nI extracted **${rounds.length} rounds** from your screenshot.\n\n${rounds.length < 5 ? "⚠️ **Warning:** Low data detected. Prediction accuracy may be lower.\n\n" : ""}**Recent Numbers Found:** ${rounds.slice(0, 5).map(r => r.number).join(', ')}...\n\n${predictionResult.explanation}`
+      }]);
+      
+      toast({
+        title: '🎯 Prediction Ready!',
+        description: `Strategy: ${predictionResult.strategy}`
+      });
+      
       setIsProcessing(false);
-      await getPrediction('Analyze this data and give me your expert prediction');
       
     } catch (error) {
       console.error('Image processing error:', error);
@@ -113,6 +184,20 @@ const Index = () => {
 
       console.log('Prediction received:', data.prediction);
       
+      // Extract prediction data from AI response
+      const predictionText = data.prediction;
+      const colorMatch = predictionText.match(/\*\*Color Prediction:\*\*\s*(RED|GREEN|VIOLET)/i);
+      const sizeMatch = predictionText.match(/\*\*Size Prediction:\*\*\s*(BIG|SMALL)/i);
+      const confidenceMatch = predictionText.match(/(\d{2,3})%\s*Confidence/i);
+      
+      if (colorMatch && sizeMatch) {
+        setPrediction({
+          color: colorMatch[1],
+          size: sizeMatch[1],
+          confidence: confidenceMatch ? parseInt(confidenceMatch[1]) : 75
+        });
+      }
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.prediction
@@ -144,12 +229,85 @@ const Index = () => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
+    const lowerMessage = userMessage.toLowerCase();
+    
     setInput('');
     setMessages(prev => [...prev, {
       role: 'user',
       content: userMessage
     }]);
-    await getPrediction(userMessage);
+    
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 600)); // Simulate thinking
+
+    // INTENT DETECTION
+    // Use Regex for whole word matching to avoid false positives (e.g. "this" containing "hi")
+    const matchWord = (text: string, words: string[]) => {
+      const pattern = new RegExp(`\\b(${words.join('|')})\\b`, 'i');
+      return pattern.test(text);
+    };
+
+    const isPredictionRequest = matchWord(lowerMessage, [
+      'predict', 'next', 'color', 'analysis', 'bet', 'result', 'what'
+    ]);
+
+    const isGreeting = matchWord(lowerMessage, [
+      'hi', 'hello', 'hey', 'yo', 'greetings', 'sup'
+    ]);
+
+    const isHelp = matchWord(lowerMessage, [
+      'help', 'how', 'work', 'guide', 'tutorial'
+    ]);
+
+    if (isPredictionRequest) {
+        if (history.length > 0) {
+          const predictionResult = generatePrediction(history);
+          
+          setPrediction({
+            color: predictionResult.color,
+            size: predictionResult.size,
+            confidence: predictionResult.confidence
+          });
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: predictionResult.explanation
+          }]);
+        } else {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: "🐺 I need data to make a prediction! Please **upload a screenshot** of the recent Wingo rounds first."
+          }]);
+        }
+    } else if (isGreeting) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "👋 **Hello!** I'm WOLF AI. \n\nI can help you analyze Wingo patterns and predict the next result. Just upload a screenshot to get started!"
+        }]);
+    } else if (isHelp) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "💡 **How to use WOLF AI:**\n\n1. Take a screenshot of the Wingo game history (last 10+ rounds).\n2. Click 'Upload Screenshot' or drop the image here.\n3. I'll automatically extract the data and give you a prediction.\n4. You can then ask me for updates or specific analysis!"
+        }]);
+    } else {
+        // Smart General Chat Response
+        const chatResponse = generateChatResponse(lowerMessage);
+        
+        if (chatResponse) {
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: chatResponse
+            }]);
+        } else {
+            // Fallback (should rarely be reached given the engine has fallbacks)
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: "I'm analyzing the data streams... 🐺\n\nIf you want a prediction, please upload a screenshot. For anything else, I'm all ears!"
+            }]);
+        }
+    }
+    
+    setIsLoading(false);
   };
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -157,171 +315,192 @@ const Index = () => {
       handleSend();
     }
   };
-  return <div className="min-h-screen bg-black flex flex-col relative">
+  return (
+    <div className="h-screen bg-black flex flex-col overflow-hidden relative selection:bg-white/20">
       <StarfieldBackground />
       
       {/* Header */}
-      <div className="relative border-b border-white/10 bg-black/40 backdrop-blur-xl z-10">
-        <div className="absolute inset-0 bg-gradient-glow pointer-events-none" />
+      <div className="flex-none border-b border-white/10 bg-black/40 backdrop-blur-xl z-50">
         <header className="relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-sm overflow-hidden shadow-premium border border-white/30 flex-shrink-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden shadow-premium border border-white/20 flex-shrink-0">
                   <img src={wolfLogo} alt="WOLF AI Logo" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-none font-display">
+                  <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-none font-display">
                     WOLF AI
                   </h1>
                   <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest mt-1 font-medium">Expert Predictions</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {user ? (
+                  <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
+                      <User className="w-3.5 h-3.5 text-white/70" />
+                      <span className="text-xs text-white/90 font-medium">{user.email?.split('@')[0]}</span>
+                    </div>
+                    <Button
+                      onClick={handleSignOut}
+                      variant="ghost"
+                      size="icon"
+                      className="w-9 h-9 text-muted-foreground hover:text-white hover:bg-white/10 rounded-full transition-all"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => navigate('/auth')}
+                    variant="outline"
+                    className="h-9 px-4 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all text-xs font-medium rounded-full"
+                  >
+                    <LogIn className="w-3.5 h-3.5 mr-2" />
+                    Sign In
+                  </Button>
+                )}
+                <HelpPricingSidebar />
               </div>
             </div>
           </div>
         </header>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-8 relative z-10">
-        <div className="grid lg:grid-cols-[1fr_380px] gap-4 sm:gap-6 lg:gap-8 h-full">
-          {/* Main Chat Section */}
-          <div className="flex flex-col gap-4 sm:gap-6 order-2 lg:order-1">
-            {/* Chat Container */}
-            <div className="flex-1 bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm flex flex-col min-h-[400px] lg:min-h-[500px]">
-              {/* Chat Header */}
-              <div className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-white font-display">AI Analysis</h2>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      {history.length > 0 ? `${history.length} rounds analyzed` : 'Upload screenshot to begin'}
-                    </p>
-                  </div>
-                  {history.length > 0 && <div className="flex items-center gap-2 text-xs">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-muted-foreground hidden sm:inline">Ready</span>
-                    </div>}
-                </div>
-              </div>
+      {/* Main Content - Fixed Flex Layout */}
+      <main className="flex-1 flex flex-col overflow-hidden max-w-[1600px] w-full mx-auto p-4 sm:p-6 gap-4 sm:gap-6">
+        
+        {/* Mobile Tabs */}
+        <div className="flex lg:hidden bg-zinc-900/90 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shrink-0 shadow-2xl mx-2 mt-2">
+            <button
+                onClick={() => setActiveTab('chat')}
+                className={cn(
+                    "flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                    activeTab === 'chat' 
+                        ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-[1.02]" 
+                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                )}
+            >
+                💬 AI Chat
+            </button>
+            <button
+                onClick={() => setActiveTab('tools')}
+                className={cn(
+                    "flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300",
+                    activeTab === 'tools' 
+                        ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-[1.02]" 
+                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                )}
+            >
+                🛠️ Tools & Upload
+            </button>
+        </div>
 
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-3 sm:space-y-4">
-                {messages.map((msg, index) => <ChatMessage key={index} role={msg.role} content={msg.content} />)}
-                {isLoading && <div className="flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-lg bg-black/40 border border-white/10 animate-fade-in">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-sm overflow-hidden bg-gradient-premium flex items-center justify-center animate-glow border border-white/20">
-                      <img src={wolfLogo} alt="WOLF AI" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm mb-2 text-white font-display">WOLF AI</div>
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{
-                      animationDelay: '0ms'
-                    }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{
-                      animationDelay: '150ms'
-                    }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{
-                      animationDelay: '300ms'
-                    }} />
+        <div className="flex-1 flex overflow-hidden gap-6">
+            {/* Left Column: Chat Interface (Scrollable) */}
+            <div className={cn(
+                "flex-1 flex flex-col bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden shadow-2xl relative z-10 transition-all",
+                activeTab === 'chat' ? "flex" : "hidden lg:flex"
+            )}>
+                {/* Chat Header */}
+                <div className="flex-none px-6 py-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" />
+                    <span className="text-sm font-medium text-white/90">AI Analyst Active</span>
+                  </div>
+                  {history.length > 0 && (
+                    <span className="text-xs text-muted-foreground bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                      {history.length} rounds analyzed
+                    </span>
+                  )}
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar scroll-smooth">
+                  {messages.map((msg, index) => (
+                    <ChatMessage key={index} role={msg.role} content={msg.content} />
+                  ))}
+                  {isLoading && (
+                    <div className="flex gap-4 p-4 animate-fade-in opacity-70">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                      </div>
+                      <div className="space-y-2">
+                         <div className="text-xs text-muted-foreground font-medium">WOLF AI is thinking...</div>
+                         <div className="flex gap-1">
+                            <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                         </div>
                       </div>
                     </div>
-                  </div>}
-              </div>
-
-              {/* Input Area */}
-              <div className="border-t border-white/10 p-3 sm:p-4 bg-black/40">
-                <div className="flex gap-2 sm:gap-3">
-                  <Input 
-                    value={input} 
-                    onChange={e => setInput(e.target.value)} 
-                    onKeyPress={handleKeyPress} 
-                    placeholder="Ask WOLF AI..." 
-                    disabled={isLoading} 
-                    className="flex-1 h-11 sm:h-12 bg-black/60 border-white/20 text-white placeholder:text-muted-foreground focus:border-white/50 transition-colors text-sm" 
-                  />
-                  <Button 
-                    onClick={handleSend} 
-                    disabled={isLoading || !input.trim()} 
-                    className={cn(
-                      "h-11 sm:h-12 px-4 sm:px-6 bg-gradient-premium text-black hover:shadow-glow border border-white/30 font-semibold transition-all hover:scale-105",
-                      input.trim() && !isLoading && "animate-pulse-glow"
-                    )}
-                  >
-                    <Send className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Send</span>
-                  </Button>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Right Sidebar */}
-          <div className="flex flex-col gap-4 sm:gap-6 order-1 lg:order-2">
-            {/* Upload Section */}
-            <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm p-4 sm:p-6">
-              <div className="mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-semibold text-white font-display">Upload Data</h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Screenshot of Wingo rounds</p>
-              </div>
-              <ImageUpload onImageUpload={handleImageUpload} isProcessing={isProcessing} />
-            </div>
-
-            {/* Data Panels */}
-            {history.length > 0 && <>
-                {/* History */}
-                <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm">
-                  <div className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-white font-display">Round History</h3>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Last {history.length} rounds</p>
+                {/* Input Area - Sticky Bottom */}
+                <div className="flex-none p-4 sm:p-6 bg-black/60 border-t border-white/10 backdrop-blur-xl">
+                  <div className="relative flex items-center gap-3 bg-white/5 p-1.5 rounded-xl border border-white/10 focus-within:border-white/20 focus-within:bg-white/10 transition-all duration-300">
+                    <Input 
+                      value={input} 
+                      onChange={e => setInput(e.target.value)} 
+                      onKeyPress={handleKeyPress} 
+                      placeholder="Ask for analysis or betting tips..." 
+                      disabled={isLoading} 
+                      className="flex-1 h-10 sm:h-12 bg-transparent border-none text-white placeholder:text-muted-foreground focus-visible:ring-0 text-sm px-4" 
+                    />
+                    <Button 
+                      onClick={handleSend} 
+                      disabled={isLoading || !input.trim()} 
+                      size="icon"
+                      className={cn(
+                        "h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-white text-black hover:bg-white/90 hover:scale-105 transition-all duration-300",
+                        !input.trim() && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </Button>
                   </div>
-                  <div className="p-4 sm:p-6">
-                    <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                      {history.slice().reverse().map((round, index) => <div key={index} className="flex items-center justify-between p-2.5 sm:p-3 bg-black/40 rounded border border-white/5 hover:border-white/20 transition-colors">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <span className="text-[10px] sm:text-xs text-muted-foreground font-mono w-16 sm:w-20">
-                              #{round.round}
-                            </span>
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-white/10 flex items-center justify-center font-bold text-sm sm:text-base text-white border border-white/20">
-                              {round.number}
-                            </div>
-                          </div>
-                          <div className={cn("px-2.5 sm:px-3 py-1 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border", round.color === 'Red' && "bg-wingo-red/20 text-wingo-red border-wingo-red/30", round.color === 'Green' && "bg-wingo-green/20 text-wingo-green border-wingo-green/30", round.color === 'Violet' && "bg-wingo-violet/20 text-wingo-violet border-wingo-violet/30")}>
-                            {round.color}
-                          </div>
-                        </div>)}
+                  <div className="text-[10px] text-muted-foreground text-center mt-3 opacity-50">
+                    AI predictions are for entertainment only. Play responsibly.
+                  </div>
+                </div>
+            </div>
+
+            {/* Right Column: Tools (Sidebar) */}
+            <div className={cn(
+                "flex-col w-full lg:w-[360px] gap-6 flex-none overflow-y-auto custom-scrollbar z-10 pb-4",
+                activeTab === 'tools' ? "flex" : "hidden lg:flex"
+            )}>
+                {/* Prediction Card - Primary Focus */}
+                <PredictionBox prediction={prediction} isLoading={isProcessing || isLoading} />
+
+                {/* Upload Card */}
+                <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-sm font-semibold text-white">Upload Screenshot</h3>
+                     <span className="text-[10px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full">Required</span>
+                  </div>
+                  <ImageUpload onImageUpload={handleImageUpload} isProcessing={isProcessing} />
+                  
+                  <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
+                    <div className="flex gap-2">
+                      <div className="mt-0.5">
+                        <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-[10px]">i</div>
+                      </div>
+                      <div className="text-[11px] leading-relaxed text-blue-200/60">
+                        Upload a clear screenshot showing the last 5-10 Wingo round results for best accuracy.
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Chart */}
-                <div className="bg-black/60 rounded-lg border border-white/10 shadow-premium backdrop-blur-sm">
-                  <div className="border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-white font-display">Trend Analysis</h3>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Color frequency patterns</p>
-                  </div>
-                  <div className="p-4 sm:p-6">
-                    <WingoChart data={history} />
-                  </div>
-                </div>
-              </>}
-
-            {/* Disclaimer */}
-            <div className="bg-black/60 backdrop-blur-sm p-4 sm:p-5 rounded-lg border border-white/20 text-xs">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <span className="text-lg sm:text-xl">⚠️</span>
-                <div>
-                  <p className="font-bold text-white mb-2 uppercase tracking-wider text-[10px] sm:text-xs font-display">Important Notice</p>
-                  <p className="text-muted-foreground leading-relaxed text-[10px] sm:text-xs">
-                    All predictions are for entertainment purposes only. Gambling involves substantial risk. 
-                    This is not financial advice. Always play responsibly and within your means.
-                  </p>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>;
+
+      </main>
+    </div>
+  );
 };
 export default Index;

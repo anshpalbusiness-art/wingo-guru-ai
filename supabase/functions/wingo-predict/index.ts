@@ -32,9 +32,9 @@ serve(async (req) => {
 
 WINGO GAME RULES:
 - Numbers 0-9 drawn each round
-- RED: 2, 4, 6, 8 (even red numbers)
-- GREEN: 1, 3, 5, 7, 9 (odd green numbers)
-- VIOLET: 0 only (special case, counts as SMALL)
+- RED: 2, 4, 6, 8 (even numbers except 0 and 5)
+- GREEN: 1, 3, 7, 9 (odd numbers except 5)
+- VIOLET: 0, 5 (special numbers - 0 is SMALL, 5 is BIG)
 - BIG: Numbers 5-9
 - SMALL: Numbers 0-4
 
