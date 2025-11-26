@@ -38,10 +38,11 @@ const Auth = () => {
       });
 
       navigate('/');
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
       toast({
         title: 'Sign In Failed',
-        description: error.message || 'Invalid credentials',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -73,10 +74,11 @@ const Auth = () => {
 
       // Optionally navigate after signup
       // navigate('/');
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Could not create account';
       toast({
         title: 'Sign Up Failed',
-        description: error.message || 'Could not create account',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

@@ -88,7 +88,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
     
     // Pattern 1: Full format "20241125010123 | 5" or similar
     // Matches 10-15 digits (round), optional separators, single digit (result)
-    const pattern1 = /(\d{10,15})[\s|:\-]*(\d)\b/g;
+    const pattern1 = /(\d{10,15})[\s|:-]*(\d)\b/g;
     
     // Pattern 2: Round number and result on separate lines or spaced
     // Looks for long number (round) ... short number (result)
@@ -98,7 +98,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
     const pattern3 = /\b([0-9])\b/g;
 
     let match;
-    let roundCounter = Date.now() % 100000000; // Use timestamp-based counter for fallback
+    const roundCounter = Date.now() % 100000000; // Use timestamp-based counter for fallback
 
     // Try Pattern 1 (Structured)
     const text1 = text;

@@ -12,7 +12,7 @@ interface WingoRound {
   color: string;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -64,12 +64,12 @@ Be DIRECT, CONFIDENT, and ACTIONABLE.`;
       const recentRounds = history.slice(-15);
       
       // Count color and size frequencies
-      const colorCount = recentRounds.reduce((acc: any, r: WingoRound) => {
+      const colorCount = recentRounds.reduce((acc: Record<string, number>, r: WingoRound) => {
         acc[r.color] = (acc[r.color] || 0) + 1;
         return acc;
       }, {});
       
-      const sizeCount = recentRounds.reduce((acc: any, r: WingoRound) => {
+      const sizeCount = recentRounds.reduce((acc: Record<string, number>, r: WingoRound) => {
         const size = r.number >= 5 ? 'Big' : 'Small';
         acc[size] = (acc[size] || 0) + 1;
         return acc;
