@@ -17,21 +17,66 @@ const getColorFromNumber = (num: number): string => {
   return 'Unknown';
 };
 
+const resizeImage = (file: File, maxWidth: number = 1024): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context failed'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const resizedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(resizedFile);
+        } else {
+          reject(new Error('Canvas to Blob failed'));
+        }
+      }, 'image/jpeg', 0.8);
+    };
+    img.onerror = reject;
+  });
+};
+
 export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> => {
   try {
     console.log('Starting OCR processing...');
     
+    // Resize image to speed up OCR
+    const resizedImage = await resizeImage(imageFile);
+    
     // Use CDN for worker to avoid path issues on mobile/deployments
     const { data: { text } } = await Tesseract.recognize(
-      imageFile,
+      resizedImage,
       'eng',
       {
-        logger: (m) => console.log(m),
+        // logger: (m) => console.log(m), // Disable logger for speed
         workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.0/dist/worker.min.js',
         corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.0/tesseract-core.wasm.js',
         errorHandler: (err) => console.error('Tesseract Internal Error:', err)
       }
     );
+    
+    // Tesseract parameters optimization is done via the worker config but recognize options are limited in V5 simple API. 
+    // V5 recognize automatically optimizes. Whitelist is better set in a lower level, but we rely on post-processing here for robustness.
 
     console.log('OCR Text:', text);
 

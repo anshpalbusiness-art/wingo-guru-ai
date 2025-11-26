@@ -101,7 +101,7 @@ function checkVioletOpportunity(history: WingoRound[]): boolean {
 
 // Analyze Big/Small patterns
 function analyzeSizePatterns(history: WingoRound[]): { prediction: string; confidence: number } {
-  const recent = history.slice(-10);
+  const recent = history.slice(-12); // Look at last 12
   const stats: SizeStats = { big: 0, small: 0 };
   
   recent.forEach(round => {
@@ -109,7 +109,30 @@ function analyzeSizePatterns(history: WingoRound[]): { prediction: string; confi
     else stats.small++;
   });
   
-  // Check for streaks
+  // 1. Check for Alternating Pattern (Zig-Zag) e.g. B S B S
+  let isAlternating = true;
+  if (recent.length >= 4) {
+      for (let i = recent.length - 1; i > recent.length - 4; i--) {
+          const current = recent[i].number >= 5 ? 'big' : 'small';
+          const prev = recent[i-1].number >= 5 ? 'big' : 'small';
+          if (current === prev) {
+              isAlternating = false;
+              break;
+          }
+      }
+  } else {
+      isAlternating = false;
+  }
+
+  if (isAlternating) {
+      const lastSize = recent[recent.length - 1].number >= 5 ? 'big' : 'small';
+      return {
+          prediction: lastSize === 'big' ? 'SMALL' : 'BIG',
+          confidence: 88 // High confidence in zig-zag
+      };
+  }
+
+  // 2. Analyze Streaks
   let sizeStreak = 1;
   const lastSize = recent[recent.length - 1]?.number >= 5 ? 'big' : 'small';
   
@@ -119,19 +142,35 @@ function analyzeSizePatterns(history: WingoRound[]): { prediction: string; confi
     else break;
   }
   
-  // If streak is 3+, predict opposite; otherwise follow trend
-  if (sizeStreak >= 3) {
+  // Strategy:
+  // Streak = 1: No clear trend, look at stats
+  // Streak = 2 or 3: Trend is forming, BET WITH IT
+  // Streak >= 4: Trend is exhausted, BET AGAINST IT (Break)
+  
+  if (sizeStreak >= 4) {
     return {
       prediction: lastSize === 'big' ? 'SMALL' : 'BIG',
-      confidence: Math.min(60 + sizeStreak * 5, 85)
+      confidence: Math.min(70 + sizeStreak * 4, 95)
+    };
+  } else if (sizeStreak >= 2) {
+    return {
+      prediction: lastSize === 'big' ? 'BIG' : 'SMALL',
+      confidence: 75 + sizeStreak * 5
     };
   }
   
-  // Follow the majority
-  const prediction = stats.big > stats.small ? 'BIG' : 'SMALL';
-  const confidence = 55 + Math.abs(stats.big - stats.small) * 3;
+  // 3. Majority / Frequency Analysis
+  if (stats.big !== stats.small) {
+      const prediction = stats.big > stats.small ? 'BIG' : 'SMALL';
+      const confidence = 60 + Math.abs(stats.big - stats.small) * 2;
+      return { prediction, confidence: Math.min(confidence, 80) };
+  }
   
-  return { prediction, confidence: Math.min(confidence, 80) };
+  // 4. Tie Breaker: Flip the last result (expecting alternation)
+  return { 
+      prediction: lastSize === 'big' ? 'SMALL' : 'BIG', 
+      confidence: 65 
+  };
 }
 
 // Main prediction function combining all strategies
