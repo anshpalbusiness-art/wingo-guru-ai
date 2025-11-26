@@ -30,29 +30,29 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
       {...getRootProps()}
       onClick={open}
       className={cn(
-        "group relative border border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 bg-gradient-to-b from-white/5 to-transparent",
-        isDragActive ? "border-blue-500 bg-blue-500/5 scale-[1.01]" : "border-white/20 hover:border-white/40 hover:bg-white/5",
-        isProcessing && "opacity-50 cursor-not-allowed"
+        "group relative border border-dashed rounded-xl p-5 sm:p-6 md:p-8 text-center cursor-pointer transition-colors bg-gradient-to-b from-white/5 to-transparent touch-manipulation",
+        isDragActive ? "border-blue-500 bg-blue-500/5" : "border-white/20 active:border-white/40 sm:hover:border-white/40 active:bg-white/5 sm:hover:bg-white/5",
+        isProcessing && "opacity-50 cursor-not-allowed pointer-events-none"
       )}
     >
       <input {...getInputProps()} />
       
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2 sm:gap-3">
         <div className={cn(
-          "w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all group-hover:scale-110 group-hover:border-white/20 group-hover:bg-white/10",
+          "w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all sm:group-hover:scale-110 sm:group-hover:border-white/20 sm:group-hover:bg-white/10",
           isDragActive && "bg-blue-500/20 border-blue-500/50"
         )}>
           {isProcessing ? (
-             <Loader2 className="w-5 h-5 text-white animate-spin" />
+             <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
           ) : isDragActive ? (
-            <ImageIcon className="w-5 h-5 text-blue-400 animate-bounce" />
+            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
           ) : (
-            <Upload className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
+            <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-white/60 sm:group-hover:text-white transition-colors" />
           )}
         </div>
         
-        <div className="space-y-2 w-full">
-          <p className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+        <div className="space-y-1.5 sm:space-y-2 w-full">
+          <p className="text-xs sm:text-sm font-medium text-white transition-colors">
             {isDragActive ? 'Drop it!' : 'Upload Screenshot'}
           </p>
           
@@ -62,12 +62,12 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
               e.stopPropagation();
               open();
             }}
-            className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium text-white border border-white/10 transition-colors md:hidden"
+            className="w-full py-2.5 px-4 bg-white/10 active:bg-white/20 rounded-lg text-xs font-medium text-white border border-white/10 transition-colors md:hidden touch-manipulation"
           >
-            Select Image
+            Tap to Select
           </button>
 
-          <p className="text-xs text-muted-foreground hidden md:block">
+          <p className="text-[10px] sm:text-xs text-muted-foreground hidden md:block">
             or drag and drop screenshot
           </p>
         </div>

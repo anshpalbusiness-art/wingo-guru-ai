@@ -143,36 +143,36 @@ const Index = () => {
       </div>
 
       {/* Main Content - Simplified Centered Layout */}
-      <main className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar w-full max-w-3xl mx-auto p-4 sm:p-6 gap-6 pb-24 animate-in fade-in duration-500">
+      <main className="flex-1 flex flex-col items-center overflow-y-auto overflow-x-hidden custom-scrollbar w-full max-w-3xl mx-auto p-3 sm:p-6 gap-4 sm:gap-6 pb-20 sm:pb-24">
         
-        {/* Prediction Section - Delay 0ms */}
-        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 fill-mode-backwards">
+        {/* Prediction Section */}
+        <div className="w-full shrink-0">
             <PredictionBox prediction={prediction} isLoading={isProcessing} />
         </div>
 
 
-        {/* Risk Management Tip - Delay 200ms */}
-        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-200 fill-mode-backwards bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-2xl p-5 flex items-start gap-4 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-md relative group hover:border-white/40 transition-all">
-          {/* Glow Effect - confined by rounded-2xl */}
-          <div className="absolute top-0 left-0 w-1 h-full bg-white/50 group-hover:bg-white transition-colors rounded-l-full"></div>
+        {/* Risk Management Tip */}
+        <div className="w-full shrink-0 bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 backdrop-blur-md relative group active:border-white/40 sm:hover:border-white/40 transition-colors">
+          {/* Glow Effect */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-white/50 group-active:bg-white sm:group-hover:bg-white transition-colors rounded-l-full"></div>
           
-          <div className="p-2 bg-white/10 rounded-lg shrink-0 mt-0.5 group-hover:bg-white/20 transition-colors">
-            <div className="w-6 h-6 flex items-center justify-center text-white font-bold text-xl">🛡️</div>
+          <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg shrink-0 mt-0.5 group-active:bg-white/20 sm:group-hover:bg-white/20 transition-colors">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-white font-bold text-lg sm:text-xl">🛡️</div>
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-1 flex items-center gap-2 flex-wrap">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide mb-1 flex items-center gap-2 flex-wrap">
                Risk Management
-               <span className="text-[10px] bg-white text-black px-1.5 py-0.5 rounded font-bold whitespace-nowrap">ESSENTIAL</span>
+               <span className="text-[9px] sm:text-[10px] bg-white text-black px-1.5 py-0.5 rounded font-bold whitespace-nowrap">ESSENTIAL</span>
             </h3>
-            <p className="text-sm text-zinc-300 leading-relaxed group-hover:text-zinc-200 transition-colors mb-3 break-words">
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-2 sm:mb-3 break-words">
               Bet <strong className="text-white bg-white/10 px-1 rounded">50%</strong> on <strong className="text-white">Size</strong> and <strong className="text-white bg-white/10 px-1 rounded">50%</strong> on <strong className="text-white">Color</strong>. This diversification strategy protects your bankroll against single-outcome losses.
             </p>
             
-            <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-xs overflow-x-auto">
-               <div className="font-bold text-white mb-1 flex items-center gap-1 whitespace-nowrap">
-                 💡 Example (Total Bet: ₹100)
+            <div className="bg-white/5 rounded-lg p-2.5 sm:p-3 border border-white/10 text-[11px] sm:text-xs">
+               <div className="font-bold text-white mb-1 flex items-center gap-1">
+                 💡 Example (₹100)
                </div>
-               <ul className="space-y-1 text-zinc-400 pl-1">
+               <ul className="space-y-1 text-zinc-400 pl-1 text-[10px] sm:text-xs">
                   <li className="flex items-center gap-2 whitespace-nowrap">
                      <span className="w-1 h-1 bg-white rounded-full shrink-0"></span>
                      Bet <span className="text-white font-medium">₹50</span> on Color (e.g. Red)
@@ -186,20 +186,20 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Upload Section - Delay 300ms */}
-        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-300 fill-mode-backwards bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 space-y-4 shadow-lg">
+        {/* Upload Section */}
+        <div className="w-full shrink-0 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 p-4 sm:p-5 space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-             <h3 className="text-sm font-semibold text-white">Upload Screenshot</h3>
-             <span className="text-[10px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full">Required</span>
+             <h3 className="text-xs sm:text-sm font-semibold text-white">Upload Screenshot</h3>
+             <span className="text-[9px] sm:text-[10px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full">Required</span>
           </div>
           <ImageUpload onImageUpload={handleImageUpload} isProcessing={isProcessing} />
           
-          <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
+          <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-2.5 sm:p-3">
             <div className="flex gap-2">
-              <div className="mt-0.5">
-                <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-[10px]">i</div>
+              <div className="mt-0.5 shrink-0">
+                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-[9px] sm:text-[10px]">i</div>
               </div>
-              <div className="text-[11px] leading-relaxed text-blue-200/60">
+              <div className="text-[10px] sm:text-[11px] leading-relaxed text-blue-200/60">
                 Upload a clear screenshot showing the last 5-10 Wingo round results. The AI will analyze streaks and patterns to predict the next color.
               </div>
             </div>
