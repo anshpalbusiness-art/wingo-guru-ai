@@ -150,6 +150,7 @@ const Index = () => {
             <PredictionBox prediction={prediction} isLoading={isProcessing} />
         </div>
 
+        {/* Analysis Explanation Removed as per request */}
 
         {/* Risk Management Tip */}
         <div className="w-full shrink-0 bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 backdrop-blur-md relative group active:border-white/40 sm:hover:border-white/40 transition-colors">
