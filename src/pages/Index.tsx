@@ -150,17 +150,6 @@ const Index = () => {
             <PredictionBox prediction={prediction} isLoading={isProcessing} />
         </div>
 
-        {/* Analysis Explanation (If available) */}
-        {explanation && (
-          <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-backwards bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-lg">
-             <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                🔍 Strategy Analysis
-             </h3>
-             <div className="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed whitespace-pre-line">
-                {explanation}
-             </div>
-          </div>
-        )}
 
         {/* Risk Management Tip - Delay 200ms */}
         <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-200 fill-mode-backwards bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-2xl p-5 flex items-start gap-4 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-md relative group hover:border-white/40 transition-all">
