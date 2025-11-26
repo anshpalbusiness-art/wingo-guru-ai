@@ -143,16 +143,16 @@ const Index = () => {
       </div>
 
       {/* Main Content - Simplified Centered Layout */}
-      <main className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar w-full max-w-3xl mx-auto p-4 sm:p-6 gap-6 pb-24">
+      <main className="flex-1 flex flex-col items-center overflow-y-auto custom-scrollbar w-full max-w-3xl mx-auto p-4 sm:p-6 gap-6 pb-24 animate-in fade-in duration-500">
         
-        {/* Prediction Section */}
-        <div className="w-full shrink-0">
+        {/* Prediction Section - Delay 0ms */}
+        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 fill-mode-backwards">
             <PredictionBox prediction={prediction} isLoading={isProcessing} />
         </div>
 
         {/* Analysis Explanation (If available) */}
         {explanation && (
-          <div className="w-full shrink-0 animate-fade-in bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-lg">
+          <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-150 fill-mode-backwards bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-lg">
              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
                 🔍 Strategy Analysis
              </h3>
@@ -162,8 +162,8 @@ const Index = () => {
           </div>
         )}
 
-        {/* Risk Management Tip */}
-        <div className="w-full shrink-0 bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-2xl p-5 flex items-start gap-4 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-md relative group hover:border-white/40 transition-all">
+        {/* Risk Management Tip - Delay 200ms */}
+        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-200 fill-mode-backwards bg-gradient-to-r from-zinc-900/80 to-black border border-white/20 rounded-2xl p-5 flex items-start gap-4 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-md relative group hover:border-white/40 transition-all">
           {/* Glow Effect - confined by rounded-2xl */}
           <div className="absolute top-0 left-0 w-1 h-full bg-white/50 group-hover:bg-white transition-colors rounded-l-full"></div>
           
@@ -197,8 +197,8 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Upload Section */}
-        <div className="w-full shrink-0 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 space-y-4 shadow-lg">
+        {/* Upload Section - Delay 300ms */}
+        <div className="w-full shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-700 delay-300 fill-mode-backwards bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 space-y-4 shadow-lg">
           <div className="flex items-center justify-between">
              <h3 className="text-sm font-semibold text-white">Upload Screenshot</h3>
              <span className="text-[10px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full">Required</span>

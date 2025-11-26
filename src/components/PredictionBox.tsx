@@ -16,109 +16,103 @@ export const PredictionBox = ({ prediction, isLoading = false }: PredictionBoxPr
   const getColorClass = (color: string) => {
     switch (color.toLowerCase()) {
       case 'red':
-        return 'bg-wingo-red/20 text-wingo-red border-wingo-red/30';
+        return 'bg-red-600 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.4)]';
       case 'green':
-        return 'bg-wingo-green/20 text-wingo-green border-wingo-green/30';
+        return 'bg-green-600 text-white border-green-500 shadow-[0_0_15px_rgba(22,163,74,0.4)]';
       case 'violet':
-        return 'bg-wingo-violet/20 text-wingo-violet border-wingo-violet/30';
+        return 'bg-purple-600 text-white border-purple-500 shadow-[0_0_15px_rgba(147,51,234,0.4)]';
       default:
-        return 'bg-white/10 text-white border-white/20';
+        return 'bg-zinc-800 text-zinc-300 border-zinc-700';
     }
   };
 
-  const getSizeClass = (size: string) => {
-    return size.toLowerCase() === 'big'
-      ? 'bg-white/10 text-white border-white/30'
-      : 'bg-white/5 text-white/90 border-white/20';
-  };
-
   return (
-    <div className="bg-black/60 backdrop-blur-sm rounded-lg border border-white/20 overflow-hidden">
+    <div className="bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl ring-1 ring-white/5">
       {/* Header */}
-      <div className="bg-gradient-premium p-3 sm:p-4">
-        <div className="flex items-center justify-center gap-2">
-          <TrendingUp className="w-5 h-5 text-black" />
-          <h3 className="text-base sm:text-lg font-bold text-black font-display">
-            NEXT PREDICTION
+      <div className="bg-white/5 p-4 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-wingo-gold" />
+          <h3 className="text-sm font-bold text-white font-display tracking-wider">
+            NEXT ROUND PREDICTION
           </h3>
         </div>
+        {prediction && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-white/60 border border-white/5">
+                Confidence: {prediction.confidence}%
+            </span>
+        )}
       </div>
 
       {/* Predictions */}
-      <div className="p-4 sm:p-6 space-y-4">
+      <div className="p-6">
         {isLoading ? (
-          <div className="text-center py-12">
-            <Loader2 className="w-10 h-10 mx-auto mb-4 text-wingo-gold animate-spin" />
-            <p className="text-sm font-medium text-white">Analyzing Patterns...</p>
-            <p className="text-xs text-muted-foreground mt-1">Extracting Wingo data</p>
+          <div className="text-center py-12 space-y-4">
+            <div className="relative w-16 h-16 mx-auto">
+                 <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                 <div className="absolute inset-0 border-4 border-t-white rounded-full animate-spin"></div>
+                 <Loader2 className="absolute inset-0 m-auto w-6 h-6 text-white animate-pulse" />
+            </div>
+            <div className="space-y-1">
+                <p className="text-sm font-medium text-white animate-pulse">Analyzing Wingo Pattern...</p>
+                <p className="text-xs text-muted-foreground">Calculating probabilities</p>
+            </div>
           </div>
         ) : !prediction ? (
           // Before upload - show placeholder
-          <div className="text-center py-6">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
-              <Target className="w-8 h-8 text-muted-foreground" />
+          <div className="text-center py-8">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/[0.02] border border-white/10 flex items-center justify-center group hover:scale-110 transition-transform duration-500">
+              <Target className="w-10 h-10 text-white/20 group-hover:text-white/40 transition-colors" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Upload a screenshot to get predictions
+            <p className="text-sm text-muted-foreground max-w-[200px] mx-auto">
+              Waiting for round data...
             </p>
           </div>
         ) : (
           // After upload - show predictions
-          <>
-            {/* Color Prediction */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">
-                Color Prediction
-              </p>
-              <div className="flex items-center justify-between">
-                <div
-                  className={cn(
-                    'flex-1 py-3 px-4 rounded-lg border-2 font-bold text-center text-lg uppercase tracking-wider',
-                    getColorClass(prediction.color)
-                  )}
-                >
-                  {prediction.color}
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Main Result Card */}
+            <div className="grid grid-cols-2 gap-4">
+                {/* Color */}
+                <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground text-center font-semibold">Color</p>
+                    <div
+                        className={cn(
+                            'aspect-square rounded-2xl flex items-center justify-center border-2 transition-all duration-300 hover:scale-[1.02]',
+                            getColorClass(prediction.color)
+                        )}
+                    >
+                        <span className="text-xl sm:text-2xl font-black uppercase tracking-wider">
+                            {prediction.color}
+                        </span>
+                    </div>
                 </div>
-                <div className="ml-3 text-right">
-                  <div className="text-2xl font-bold text-white">
-                    {prediction.confidence}%
-                  </div>
-                  <div className="text-[10px] text-muted-foreground uppercase">
-                    Confidence
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Size Prediction */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">
-                Size Prediction
-              </p>
-              <div
-                className={cn(
-                  'py-3 px-4 rounded-lg border-2 font-bold text-center text-lg uppercase tracking-wider',
-                  getSizeClass(prediction.size)
-                )}
-              >
-                {prediction.size}
-              </div>
+                {/* Size */}
+                <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground text-center font-semibold">Size</p>
+                    <div className="aspect-square rounded-2xl bg-zinc-800 border-2 border-zinc-700 text-white flex items-center justify-center shadow-lg hover:border-white/20 transition-all duration-300 hover:scale-[1.02]">
+                        <span className="text-xl sm:text-2xl font-black uppercase tracking-wider">
+                            {prediction.size}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {/* Confidence Bar */}
-            <div className="pt-2">
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Prediction Strength</span>
-                <span>{prediction.confidence}%</span>
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <div className="flex justify-between text-xs font-medium text-white/80 mb-2">
+                <span>Probability Analysis</span>
+                <span>{prediction.confidence}% Reliable</span>
               </div>
-              <div className="h-2 bg-black/40 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-premium transition-all duration-500"
+                  className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000 ease-out"
                   style={{ width: `${prediction.confidence}%` }}
                 />
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
