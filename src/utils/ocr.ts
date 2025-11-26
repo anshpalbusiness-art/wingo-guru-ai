@@ -17,7 +17,7 @@ const getColorFromNumber = (num: number): string => {
   return 'Unknown';
 };
 
-const resizeImage = (file: File, maxWidth: number = 400): Promise<File> => {
+const resizeImage = (file: File, maxWidth: number = 800): Promise<File> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = URL.createObjectURL(file);
@@ -176,7 +176,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
     // If still no structured data, just find all single digits
     // This is common in screenshots that just show the result column
-    if (rounds.length < 3) {
+    if (rounds.length < 5) {
       console.log('Falling back to simple digit extraction');
       const numbers: number[] = [];
       
