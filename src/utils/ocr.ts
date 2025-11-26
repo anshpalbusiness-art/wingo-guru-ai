@@ -17,7 +17,7 @@ const getColorFromNumber = (num: number): string => {
   return 'Unknown';
 };
 
-const resizeImage = (file: File, maxWidth: number = 500): Promise<File> => {
+const resizeImage = (file: File, maxWidth: number = 400): Promise<File> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = URL.createObjectURL(file);
@@ -50,7 +50,7 @@ const resizeImage = (file: File, maxWidth: number = 500): Promise<File> => {
         } else {
           reject(new Error('Canvas to Blob failed'));
         }
-      }, 'image/jpeg', 0.5);
+      }, 'image/jpeg', 0.4);
     };
     img.onerror = reject;
   });
