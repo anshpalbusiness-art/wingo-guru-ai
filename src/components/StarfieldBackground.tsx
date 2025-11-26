@@ -124,10 +124,10 @@ export const StarfieldBackground = () => {
 
           // Draw glow for brighter stars
           if (opacity > 0.3 && size > 1) {
-            const glowRadius = Math.max(1, size * 1.5); // Reduced glow radius
+            const glowRadius = Math.max(1, size * 1.2);
             const gradient = ctx.createRadialGradient(px, py, 0, px, py, glowRadius);
-            gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.3})`); // Reduced opacity
-            gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.1})`); // Reduced opacity
+            gradient.addColorStop(0, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.2})`);
+            gradient.addColorStop(0.5, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${opacity * 0.05})`);
             gradient.addColorStop(1, `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, 0)`);
             
             ctx.fillStyle = gradient;
@@ -183,9 +183,9 @@ export const StarfieldBackground = () => {
           ctx.stroke();
 
           // Glow effect
-          ctx.shadowBlur = 5; // Reduced from 10
-          ctx.shadowColor = `rgba(255, 255, 255, ${star.opacity * 0.3})`; // Reduced from 0.5
-          ctx.strokeStyle = `rgba(255, 255, 255, ${star.opacity * 0.3})`;
+          ctx.shadowBlur = 3;
+          ctx.shadowColor = `rgba(255, 255, 255, ${star.opacity * 0.2})`;
+          ctx.strokeStyle = `rgba(255, 255, 255, ${star.opacity * 0.2})`;
           ctx.lineWidth = 4;
           ctx.stroke();
           ctx.shadowBlur = 0;
