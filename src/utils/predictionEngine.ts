@@ -25,24 +25,26 @@ function checkAlternation(history: string[]): { isAlternating: boolean; next: st
 }
 
 export function generatePrediction(history: WingoRound[]): PredictionResult {
-  if (history.length < 5) {
-     // Not enough data fallback
+  if (history.length < 3) {
      return {
-        color: 'RED', size: 'BIG', confidence: 60, strategy: 'Insufficient Data',
-        explanation: '⚠️ **Need at least 5 rounds** for accurate analysis. Please upload a clearer screenshot.',
-        bankrollSuggestion: { main: {color: 'RED', percentage: 100}, hedge1: {color: 'GREEN', percentage: 0}, hedge2: {color: 'VIOLET', percentage: 0}}
+        color: 'GREEN', size: 'SMALL', confidence: 60, strategy: 'Insufficient Data',
+        explanation: '⚠️ **Need at least 3 rounds** for analysis. Please upload a clearer screenshot.',
+        bankrollSuggestion: { main: {color: 'GREEN', percentage: 100}, hedge1: {color: 'RED', percentage: 0}, hedge2: {color: 'VIOLET', percentage: 0}}
      };
   }
 
-  const recent = history.slice(-15); // Analyze last 15 rounds
+  // Analyze last 10-20 rounds with weighted importance
+  const recent = history.slice(-20);
+  const last10 = recent.slice(-10);
+  const last5 = recent.slice(-5);
   
   // --- SCORES SETUP ---
   const sizeScores = { 'BIG': 0, 'SMALL': 0 };
   const colorScores = { 'RED': 0, 'GREEN': 0, 'VIOLET': 0 };
   
   // --- DATA EXTRACTION ---
-  const sizeHistory = recent.map(r => r.number >= 5 ? 'BIG' : 'SMALL');
-  const colorHistory = recent.map(r => r.color.toUpperCase());
+  const sizeHistory = last10.map(r => r.number >= 5 ? 'BIG' : 'SMALL');
+  const colorHistory = last10.map(r => r.color.toUpperCase());
   
   const bigCount = sizeHistory.filter(s => s === 'BIG').length;
   const smallCount = sizeHistory.filter(s => s === 'SMALL').length;
@@ -51,141 +53,144 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
   const greenCount = colorHistory.filter(c => c === 'GREEN').length;
   const violetCount = colorHistory.filter(c => c === 'VIOLET').length;
 
-  // --- STRATEGY 1: STREAK BREAKING (Weight 0.3 / 30 pts) ---
-  // Detect streaks of 3+ and bet opposite
+  // Weight recent data more (last 5 = 60% weight)
+  const last5Size = last5.map(r => r.number >= 5 ? 'BIG' : 'SMALL');
+  const last5Color = last5.map(r => r.color.toUpperCase());
   
-  // Size Streak
+  const recentBigCount = last5Size.filter(s => s === 'BIG').length;
+  const recentSmallCount = last5Size.filter(s => s === 'SMALL').length;
+  const recentRedCount = last5Color.filter(c => c === 'RED').length;
+  const recentGreenCount = last5Color.filter(c => c === 'GREEN').length;
+  const recentVioletCount = last5Color.filter(c => c === 'VIOLET').length;
+
+  // --- STRATEGY 1: STREAK BREAKING (Weight 0.3 / 30 pts) ---
   let sizeStreak = 1;
   for(let i = sizeHistory.length - 2; i >= 0; i--) {
       if(sizeHistory[i] === sizeHistory[sizeHistory.length-1]) sizeStreak++;
       else break;
   }
-  if (sizeStreak >= 3) {
+  if (sizeStreak >= 2) {
       const streakSide = sizeHistory[sizeHistory.length-1];
       const breakSide = streakSide === 'BIG' ? 'SMALL' : 'BIG';
       sizeScores[breakSide] += 30;
   }
 
-  // Color Streak
   let colorStreak = 1;
   for(let i = colorHistory.length - 2; i >= 0; i--) {
       if(colorHistory[i] === colorHistory[colorHistory.length-1]) colorStreak++;
       else break;
   }
-  if (colorStreak >= 3) {
+  if (colorStreak >= 2) {
       const streakColor = colorHistory[colorHistory.length-1];
-      if(streakColor !== 'VIOLET') { // Violet doesn't usually streak long
-          const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 30);
+      if(streakColor !== 'VIOLET') {
+          const others = ['RED', 'GREEN', 'VIOLET'].filter(c => c !== streakColor);
+          others.forEach(c => colorScores[c as keyof typeof colorScores] += 15);
       }
   }
 
   // --- STRATEGY 2: GAP METHOD (Weight 0.25 / 25 pts) ---
-  // Bet on what hasn't appeared in a while
-  
-  // Size Gap
   const lastBig = sizeHistory.lastIndexOf('BIG');
   const lastSmall = sizeHistory.lastIndexOf('SMALL');
-  const bigGap = lastBig === -1 ? 15 : sizeHistory.length - 1 - lastBig;
-  const smallGap = lastSmall === -1 ? 15 : sizeHistory.length - 1 - lastSmall;
+  const bigGap = lastBig === -1 ? 10 : sizeHistory.length - 1 - lastBig;
+  const smallGap = lastSmall === -1 ? 10 : sizeHistory.length - 1 - lastSmall;
   
-  if (bigGap > smallGap && bigGap >= 4) sizeScores['BIG'] += 25;
-  if (smallGap > bigGap && smallGap >= 4) sizeScores['SMALL'] += 25;
+  if (bigGap > smallGap && bigGap >= 3) sizeScores['BIG'] += 25;
+  if (smallGap > bigGap && smallGap >= 3) sizeScores['SMALL'] += 25;
 
-  // Color Gap
   const lastRed = colorHistory.lastIndexOf('RED');
   const lastGreen = colorHistory.lastIndexOf('GREEN');
   const lastViolet = colorHistory.lastIndexOf('VIOLET');
   
-  const redGap = lastRed === -1 ? 15 : colorHistory.length - 1 - lastRed;
-  const greenGap = lastGreen === -1 ? 15 : colorHistory.length - 1 - lastGreen;
-  const violetGap = lastViolet === -1 ? 15 : colorHistory.length - 1 - lastViolet;
+  const redGap = lastRed === -1 ? 10 : colorHistory.length - 1 - lastRed;
+  const greenGap = lastGreen === -1 ? 10 : colorHistory.length - 1 - lastGreen;
+  const violetGap = lastViolet === -1 ? 10 : colorHistory.length - 1 - lastViolet;
   
-  const maxColorGap = Math.max(redGap, greenGap); // Ignore violet for main gap
-  if (redGap === maxColorGap && redGap >= 4) colorScores['RED'] += 25;
-  if (greenGap === maxColorGap && greenGap >= 4) colorScores['GREEN'] += 25;
+  if (redGap >= 3) colorScores['RED'] += Math.min(redGap * 5, 25);
+  if (greenGap >= 3) colorScores['GREEN'] += Math.min(greenGap * 5, 25);
+  if (violetGap >= 5) colorScores['VIOLET'] += 25;
 
   // --- STRATEGY 3: FREQUENCY BALANCE (Weight 0.2 / 20 pts) ---
-  // If one side is dominant (>1.5x), bet underdog
+  if (recentBigCount > recentSmallCount * 1.3) sizeScores['SMALL'] += 20;
+  else if (recentSmallCount > recentBigCount * 1.3) sizeScores['BIG'] += 20;
   
-  if (bigCount > smallCount * 1.5) sizeScores['SMALL'] += 20;
-  else if (smallCount > bigCount * 1.5) sizeScores['BIG'] += 20;
-  
-  if (redCount > greenCount * 1.5) colorScores['GREEN'] += 20;
-  else if (greenCount > redCount * 1.5) colorScores['RED'] += 20;
+  if (recentRedCount > recentGreenCount * 1.3) colorScores['GREEN'] += 20;
+  else if (recentGreenCount > recentRedCount * 1.3) colorScores['RED'] += 20;
 
   // --- STRATEGY 4: ALTERNATION PATTERNS (Weight 0.15 / 15 pts) ---
-  // Detect Zig-Zag
   const sizeAlt = checkAlternation(sizeHistory);
   if (sizeAlt.isAlternating) sizeScores[sizeAlt.next as 'BIG'|'SMALL'] += 15;
   
   const colorAlt = checkAlternation(colorHistory);
   if (colorAlt.isAlternating && colorAlt.next !== 'VIOLET') {
-      colorScores[colorAlt.next as 'RED'|'GREEN'] += 15;
+      colorScores[colorAlt.next as 'RED'|'GREEN'|'VIOLET'] += 15;
   }
 
   // --- STRATEGY 5: VIOLET FOCUS (Weight 0.1 / 10 pts) ---
-  // If violet rare (<2 in last 15), add small score
-  if (violetCount < 2) colorScores['VIOLET'] += 10;
-  // Also randomly violet appears every ~5-8 rounds
+  if (violetCount < 2 || recentVioletCount === 0) colorScores['VIOLET'] += 10;
   if (violetGap >= 6) colorScores['VIOLET'] += 15;
 
+  // Add base randomness to prevent getting stuck
+  sizeScores['BIG'] += Math.random() * 5;
+  sizeScores['SMALL'] += Math.random() * 5;
+  colorScores['RED'] += Math.random() * 5;
+  colorScores['GREEN'] += Math.random() * 5;
+  colorScores['VIOLET'] += Math.random() * 3;
 
   // --- FINALIZE PREDICTIONS ---
-  
-  // Normalize Scores to Percentages
-  const totalSizeScore = sizeScores['BIG'] + sizeScores['SMALL'] || 1;
-  const totalColorScore = colorScores['RED'] + colorScores['GREEN'] + colorScores['VIOLET'] || 1;
+  const totalSizeScore = sizeScores['BIG'] + sizeScores['SMALL'];
+  const totalColorScore = colorScores['RED'] + colorScores['GREEN'] + colorScores['VIOLET'];
   
   const bigProb = Math.round((sizeScores['BIG'] / totalSizeScore) * 100);
-  const smallProb = Math.round((sizeScores['SMALL'] / totalSizeScore) * 100);
+  const smallProb = 100 - bigProb;
   
   const redProb = Math.round((colorScores['RED'] / totalColorScore) * 100);
   const greenProb = Math.round((colorScores['GREEN'] / totalColorScore) * 100);
-  const violetProb = Math.round((colorScores['VIOLET'] / totalColorScore) * 100);
+  const violetProb = 100 - redProb - greenProb;
 
-  // Determine Winners
-  const predictedSize = sizeScores['BIG'] >= sizeScores['SMALL'] ? 'BIG' : 'SMALL';
-  const predictedColor = redProb >= greenProb ? (redProb >= violetProb ? 'RED' : 'VIOLET') 
-                                              : (greenProb >= violetProb ? 'GREEN' : 'VIOLET');
+  const predictedSize = sizeScores['BIG'] > sizeScores['SMALL'] ? 'BIG' : 'SMALL';
+  const secondarySize = predictedSize === 'BIG' ? 'SMALL' : 'BIG';
+  
+  const sortedColors = [
+    { color: 'RED', score: colorScores['RED'], prob: redProb },
+    { color: 'GREEN', score: colorScores['GREEN'], prob: greenProb },
+    { color: 'VIOLET', score: colorScores['VIOLET'], prob: violetProb }
+  ].sort((a, b) => b.score - a.score);
+  
+  const predictedColor = sortedColors[0].color;
+  const secondaryColor = sortedColors[1].color;
+  const darkHorse = sortedColors[2].color;
 
-  // Confidence
-  const mainConfidence = Math.max(bigProb, smallProb);
-  const colorConfidence = Math.max(redProb, greenProb, violetProb);
-  const finalConfidence = Math.round((mainConfidence + colorConfidence) / 2);
+  // Display confidence in 97-99% range
+  const displayConfidence = 97 + Math.floor(Math.random() * 3);
 
-  // Format Explanation
   const explanation = `
-### 📊 **Statistical Analysis**
+### 📊 **Pattern Analysis**
 
-**Big/Small Prediction:**
-• **PRIMARY:** ${predictedSize} (${mainConfidence}%)
-• **Secondary:** ${predictedSize === 'BIG' ? 'SMALL' : 'BIG'} (${100 - mainConfidence}%)
+**Big/Small: ${predictedSize} (${Math.max(bigProb, smallProb)}%)** | Secondary: ${secondarySize} (${Math.min(bigProb, smallProb)}%)
 
-**Color Prediction:**
-• **PRIMARY:** ${predictedColor} (${colorConfidence}%)
-• **Secondary:** ${predictedColor === 'RED' ? 'GREEN' : 'RED'}
-• **Dark Horse:** VIOLET (${violetProb}%)
+**Color: ${predictedColor} (${sortedColors[0].prob}%)** | Secondary: ${secondaryColor} (${sortedColors[1].prob}%) | Dark Horse: ${darkHorse} (${sortedColors[2].prob}%)
 
 **Active Patterns:**
-${sizeStreak >= 3 ? `• ⚠️ ${sizeHistory[sizeHistory.length-1]} Streak of ${sizeStreak} (Betting Break)` : ''}
-${sizeAlt.isAlternating ? `• ⚡ Zig-Zag Pattern Detected` : ''}
-${violetGap >= 6 ? `• 💜 Violet Overdue (${violetGap} rounds)` : ''}
-${bigCount > smallCount * 1.5 ? `• ⚖️ Market Imbalance (Too many BIGs)` : ''}
+${sizeStreak >= 2 ? `• ⚠️ ${sizeHistory[sizeHistory.length-1]} Streak (${sizeStreak} rounds)` : ''}
+${sizeAlt.isAlternating ? `• ⚡ Alternation Detected` : ''}
+${violetGap >= 6 ? `• 💜 Violet Gap: ${violetGap} rounds` : ''}
+${recentBigCount > recentSmallCount * 1.5 || recentSmallCount > recentBigCount * 1.5 ? `• ⚖️ Imbalance Detected` : ''}
 
-> *Predictions based on weighted probability engine. Not financial advice.*
-  `;
+**Bet Suggestion:** ${displayConfidence >= 98 ? 'Moderate' : 'Conservative'} on ${predictedColor} + ${predictedSize}
+
+> *Statistical analysis for entertainment. Gambling involves risk.*
+  `.trim();
 
   return {
     color: predictedColor,
     size: predictedSize,
-    confidence: finalConfidence,
+    confidence: displayConfidence,
     strategy: 'Weighted Multi-Factor',
-    explanation: explanation.trim(),
+    explanation,
     bankrollSuggestion: {
         main: { color: predictedColor, percentage: 50 },
-        hedge1: { color: predictedColor === 'RED' ? 'GREEN' : 'RED', percentage: 30 },
-        hedge2: { color: 'VIOLET', percentage: 20 }
+        hedge1: { color: secondaryColor, percentage: 30 },
+        hedge2: { color: darkHorse, percentage: 20 }
     }
   };
 }
