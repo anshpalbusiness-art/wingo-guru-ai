@@ -56,21 +56,24 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
   const greenCount = colorHistory.filter(c => c === 'GREEN').length;
   const violetCount = colorHistory.filter(c => c === 'VIOLET').length;
 
-  // --- STRATEGY 1: STREAK BREAKING (Weight 0.35 / 35 pts) ---
-  // Stronger weight on recent streaks - most important pattern
+  // --- STRATEGY 1: AGGRESSIVE STREAK BREAKING (Weight 0.6 / 60 pts) ---
+  // MOST IMPORTANT: Flip after 3+ same results - aggressive reversal betting
   
   let sizeStreak = 1;
   for(let i = sizeHistory.length - 2; i >= 0; i--) {
       if(sizeHistory[i] === sizeHistory[sizeHistory.length-1]) sizeStreak++;
       else break;
   }
-  // Longer streaks = higher reversal probability
-  if (sizeStreak >= 4) {
+  // AGGRESSIVE: Even 3 in a row triggers strong reversal
+  if (sizeStreak >= 5) {
       const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
-      sizeScores[breakSide] += 45; // Strong reversal signal
-  } else if (sizeStreak === 3) {
+      sizeScores[breakSide] += 80; // Extreme reversal - must flip
+  } else if (sizeStreak >= 4) {
       const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
-      sizeScores[breakSide] += 35;
+      sizeScores[breakSide] += 70; // Very strong reversal
+  } else if (sizeStreak >= 3) {
+      const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
+      sizeScores[breakSide] += 60; // Strong reversal starts at 3
   }
 
   let colorStreak = 1;
@@ -78,68 +81,74 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
       if(colorHistory[i] === colorHistory[colorHistory.length-1]) colorStreak++;
       else break;
   }
-  if (colorStreak >= 4) {
+  // AGGRESSIVE: Flip color after 3+ same
+  if (colorStreak >= 5) {
       const streakColor = colorHistory[colorHistory.length-1];
       if(streakColor !== 'VIOLET') {
           const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 45);
+          others.forEach(c => colorScores[c as keyof typeof colorScores] += 80);
       }
-  } else if (colorStreak === 3) {
+  } else if (colorStreak >= 4) {
       const streakColor = colorHistory[colorHistory.length-1];
       if(streakColor !== 'VIOLET') {
           const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 35);
+          others.forEach(c => colorScores[c as keyof typeof colorScores] += 70);
+      }
+  } else if (colorStreak >= 3) {
+      const streakColor = colorHistory[colorHistory.length-1];
+      if(streakColor !== 'VIOLET') {
+          const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
+          others.forEach(c => colorScores[c as keyof typeof colorScores] += 60);
       }
   }
 
-  // --- STRATEGY 2: GAP METHOD (Weight 0.3 / 30 pts) ---
-  // Recent gaps matter more - if something hasn't appeared in last 3-5, it's overdue
+  // --- STRATEGY 2: GAP METHOD (Weight 0.2 / 20 pts) ---
+  // Secondary signal - overdue outcomes
   
   const lastBig = sizeHistory.lastIndexOf('BIG');
   const lastSmall = sizeHistory.lastIndexOf('SMALL');
   const bigGap = lastBig === -1 ? 10 : sizeHistory.length - 1 - lastBig;
   const smallGap = lastSmall === -1 ? 10 : sizeHistory.length - 1 - lastSmall;
   
-  // Larger gaps get more weight
-  if (bigGap >= 4) sizeScores['BIG'] += 40;
-  else if (bigGap >= 2) sizeScores['BIG'] += 30;
+  // Reduced weight - streaks matter more
+  if (bigGap >= 5) sizeScores['BIG'] += 25;
+  else if (bigGap >= 3) sizeScores['BIG'] += 15;
   
-  if (smallGap >= 4) sizeScores['SMALL'] += 40;
-  else if (smallGap >= 2) sizeScores['SMALL'] += 30;
+  if (smallGap >= 5) sizeScores['SMALL'] += 25;
+  else if (smallGap >= 3) sizeScores['SMALL'] += 15;
 
   const lastRed = colorHistory.lastIndexOf('RED');
   const lastGreen = colorHistory.lastIndexOf('GREEN');
   const redGap = lastRed === -1 ? 10 : colorHistory.length - 1 - lastRed;
   const greenGap = lastGreen === -1 ? 10 : colorHistory.length - 1 - lastGreen;
   
-  if (redGap >= 4) colorScores['RED'] += 40;
-  else if (redGap >= 2) colorScores['RED'] += 30;
+  if (redGap >= 5) colorScores['RED'] += 25;
+  else if (redGap >= 3) colorScores['RED'] += 15;
   
-  if (greenGap >= 4) colorScores['GREEN'] += 40;
-  else if (greenGap >= 2) colorScores['GREEN'] += 30;
+  if (greenGap >= 5) colorScores['GREEN'] += 25;
+  else if (greenGap >= 3) colorScores['GREEN'] += 15;
 
-  // --- STRATEGY 3: FREQUENCY BALANCE (Weight 0.2 / 20 pts) ---
-  // If one side is dominant (>1.5x), bet underdog
+  // --- STRATEGY 3: FREQUENCY BALANCE (Weight 0.15 / 15 pts) ---
+  // Minor signal - imbalance correction
   
-  if (bigCount > smallCount * 1.5) sizeScores['SMALL'] += 20;
-  else if (smallCount > bigCount * 1.5) sizeScores['BIG'] += 20;
+  if (bigCount > smallCount * 1.8) sizeScores['SMALL'] += 15;
+  else if (smallCount > bigCount * 1.8) sizeScores['BIG'] += 15;
   
-  if (redCount > greenCount * 1.5) colorScores['GREEN'] += 20;
-  else if (greenCount > redCount * 1.5) colorScores['RED'] += 20;
+  if (redCount > greenCount * 1.8) colorScores['GREEN'] += 15;
+  else if (greenCount > redCount * 1.8) colorScores['RED'] += 15;
 
-  // --- STRATEGY 4: ALTERNATION PATTERNS (Weight 0.15 / 15 pts) ---
-  // Detect Zig-Zag
+  // --- STRATEGY 4: ALTERNATION PATTERNS (Weight 0.05 / 5 pts) ---
+  // Minimal weight - streaks are king
   const sizeAlt = checkAlternation(sizeHistory);
-  if (sizeAlt.isAlternating) sizeScores[sizeAlt.next as 'BIG'|'SMALL'] += 15;
+  if (sizeAlt.isAlternating) sizeScores[sizeAlt.next as 'BIG'|'SMALL'] += 5;
   
   const colorAlt = checkAlternation(colorHistory);
   if (colorAlt.isAlternating && colorAlt.next !== 'VIOLET') {
-      colorScores[colorAlt.next as 'RED'|'GREEN'] += 15;
+      colorScores[colorAlt.next as 'RED'|'GREEN'] += 5;
   }
 
-  // --- STRATEGY 5: VIOLET FOCUS (Weight 0.1 / 10 pts) ---
-  // If violet rare (<2 in last 10), add small score
-  if (violetCount < 2) colorScores['VIOLET'] += 10;
+  // --- STRATEGY 5: VIOLET FOCUS (Removed) ---
+  // Violet not prioritized in aggressive betting
 
 
   // --- FINALIZE PREDICTIONS ---
