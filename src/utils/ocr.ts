@@ -41,16 +41,16 @@ const resizeImage = (file: File, maxWidth: number = 800): Promise<File> => {
       ctx.drawImage(img, 0, 0, width, height);
       
       canvas.toBlob((blob) => {
-        if (blob) {
-          const resizedFile = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-          });
-          resolve(resizedFile);
-        } else {
-          reject(new Error('Canvas to Blob failed'));
-        }
-      }, 'image/jpeg', 0.4);
+         if (blob) {
+           const resizedFile = new File([blob], file.name, {
+             type: 'image/jpeg',
+             lastModified: Date.now(),
+           });
+           resolve(resizedFile);
+         } else {
+           reject(new Error('Canvas to Blob failed'));
+         }
+       }, 'image/jpeg', 0.75);
     };
     img.onerror = reject;
   });
