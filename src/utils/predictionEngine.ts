@@ -56,99 +56,131 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
   const greenCount = colorHistory.filter(c => c === 'GREEN').length;
   const violetCount = colorHistory.filter(c => c === 'VIOLET').length;
 
-  // --- STRATEGY 1: AGGRESSIVE STREAK BREAKING (Weight 0.6 / 60 pts) ---
-  // MOST IMPORTANT: Flip after 3+ same results - aggressive reversal betting
+  // --- ADVANCED STRATEGY: LONG BIG STREAK + BAIT DETECTION (Weight 0.7 / 70 pts) ---
+  // Platform manipulation: 8+ Big streaks insert 1-2 "bait" Smalls, then continue Big
   
   let sizeStreak = 1;
+  let lastSize = sizeHistory[sizeHistory.length-1];
   for(let i = sizeHistory.length - 2; i >= 0; i--) {
-      if(sizeHistory[i] === sizeHistory[sizeHistory.length-1]) sizeStreak++;
+      if(sizeHistory[i] === lastSize) sizeStreak++;
       else break;
   }
-  // AGGRESSIVE: Even 3 in a row triggers strong reversal
-  if (sizeStreak >= 5) {
-      const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
-      sizeScores[breakSide] += 80; // Extreme reversal - must flip
+
+  // Count Big rounds in last 10
+  const bigInLast10 = sizeHistory.filter(s => s === 'BIG').length;
+  
+  // Detect if we're in a long Big streak phase (8+ Bigs total or 6+ consecutive)
+  const inLongBigPhase = bigInLast10 >= 8 || sizeStreak >= 6;
+  
+  // Check for recent "bait" Small (1-2 Smalls surrounded by Bigs)
+  const last3 = sizeHistory.slice(-3);
+  const hasBaitPattern = (
+    last3.length === 3 && 
+    last3[0] === 'BIG' && 
+    last3[1] === 'SMALL' && 
+    last3[2] === 'SMALL'
+  ) || (
+    last3.length === 3 &&
+    last3[0] === 'BIG' &&
+    last3[1] === 'SMALL' // Single bait Small
+  );
+
+  // CRITICAL: Long Big streak with bait pattern → CONTINUE BIG
+  if (inLongBigPhase && lastSize === 'SMALL' && bigInLast10 >= 7) {
+    // Just hit a bait Small → next is very likely BIG again
+    sizeScores['BIG'] += 90; // Extremely high - bait recovery
+  } else if (inLongBigPhase && sizeStreak >= 8) {
+    // Deep in long Big streak → still likely to continue with occasional bait
+    sizeScores['BIG'] += 70;
+  } else if (sizeStreak >= 6 && lastSize === 'BIG') {
+    // Building up to long streak
+    sizeScores['BIG'] += 60;
   } else if (sizeStreak >= 4) {
-      const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
-      sizeScores[breakSide] += 70; // Very strong reversal
-  } else if (sizeStreak >= 3) {
-      const breakSide = sizeHistory[sizeHistory.length-1] === 'BIG' ? 'SMALL' : 'BIG';
-      sizeScores[breakSide] += 60; // Strong reversal starts at 3
+    // Standard streak
+    const breakSide = lastSize === 'BIG' ? 'SMALL' : 'BIG';
+    sizeScores[breakSide] += 40;
   }
 
+  // Check if real Small streak is starting (2 Smalls within 3 rounds)
+  const smallsInLast3 = last3.filter(s => s === 'SMALL').length;
+  if (smallsInLast3 >= 2 && lastSize === 'SMALL') {
+    // Real Small streak detected
+    sizeScores['SMALL'] += 50;
+  }
+
+  // --- COLOR LOGIC: VIOLET → RED BIAS IN BIG STREAKS ---
   let colorStreak = 1;
+  let lastColor = colorHistory[colorHistory.length-1];
   for(let i = colorHistory.length - 2; i >= 0; i--) {
-      if(colorHistory[i] === colorHistory[colorHistory.length-1]) colorStreak++;
+      if(colorHistory[i] === lastColor) colorStreak++;
       else break;
   }
-  // AGGRESSIVE: Flip color after 3+ same
-  if (colorStreak >= 5) {
-      const streakColor = colorHistory[colorHistory.length-1];
-      if(streakColor !== 'VIOLET') {
-          const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 80);
-      }
-  } else if (colorStreak >= 4) {
-      const streakColor = colorHistory[colorHistory.length-1];
-      if(streakColor !== 'VIOLET') {
-          const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 70);
-      }
-  } else if (colorStreak >= 3) {
-      const streakColor = colorHistory[colorHistory.length-1];
-      if(streakColor !== 'VIOLET') {
-          const others = ['RED', 'GREEN'].filter(c => c !== streakColor);
-          others.forEach(c => colorScores[c as keyof typeof colorScores] += 60);
-      }
+
+  // If last round was Violet AND we're in a Big phase → RED is heavily favored next
+  if (lastColor === 'VIOLET' && inLongBigPhase) {
+    colorScores['RED'] += 80; // 70-85% probability as per user data
+    colorScores['GREEN'] += 20; // Lower green
+  } else if (lastColor === 'VIOLET') {
+    // Violet without Big streak context → still favor Red slightly
+    colorScores['RED'] += 50;
+    colorScores['GREEN'] += 30;
+  }
+  
+  // Green streaks inside Big phases
+  const greenInLast5 = colorHistory.slice(-5).filter(c => c === 'GREEN').length;
+  if (inLongBigPhase && greenInLast5 >= 3) {
+    // After Green run in Big streak → Violet or Red next
+    colorScores['VIOLET'] += 40;
+    colorScores['RED'] += 40;
   }
 
-  // --- STRATEGY 2: GAP METHOD (Weight 0.2 / 20 pts) ---
-  // Secondary signal - overdue outcomes
+  // Standard color streak handling
+  if (colorStreak >= 4 && lastColor !== 'VIOLET') {
+      const others = ['RED', 'GREEN'].filter(c => c !== lastColor);
+      others.forEach(c => colorScores[c as keyof typeof colorScores] += 50);
+  }
+
+  // --- STRATEGY 2: GAP METHOD (Weight 0.15 / 15 pts) ---
+  // Minor - only applies outside long Big phases
   
   const lastBig = sizeHistory.lastIndexOf('BIG');
   const lastSmall = sizeHistory.lastIndexOf('SMALL');
   const bigGap = lastBig === -1 ? 10 : sizeHistory.length - 1 - lastBig;
   const smallGap = lastSmall === -1 ? 10 : sizeHistory.length - 1 - lastSmall;
   
-  // Reduced weight - streaks matter more
-  if (bigGap >= 5) sizeScores['BIG'] += 25;
-  else if (bigGap >= 3) sizeScores['BIG'] += 15;
-  
-  if (smallGap >= 5) sizeScores['SMALL'] += 25;
-  else if (smallGap >= 3) sizeScores['SMALL'] += 15;
+  if (!inLongBigPhase) {
+    if (bigGap >= 5) sizeScores['BIG'] += 20;
+    if (smallGap >= 5) sizeScores['SMALL'] += 20;
+  }
 
   const lastRed = colorHistory.lastIndexOf('RED');
   const lastGreen = colorHistory.lastIndexOf('GREEN');
   const redGap = lastRed === -1 ? 10 : colorHistory.length - 1 - lastRed;
   const greenGap = lastGreen === -1 ? 10 : colorHistory.length - 1 - lastGreen;
   
-  if (redGap >= 5) colorScores['RED'] += 25;
-  else if (redGap >= 3) colorScores['RED'] += 15;
-  
-  if (greenGap >= 5) colorScores['GREEN'] += 25;
-  else if (greenGap >= 3) colorScores['GREEN'] += 15;
+  if (redGap >= 5) colorScores['RED'] += 15;
+  if (greenGap >= 5) colorScores['GREEN'] += 15;
 
-  // --- STRATEGY 3: FREQUENCY BALANCE (Weight 0.15 / 15 pts) ---
-  // Minor signal - imbalance correction
+  // --- STRATEGY 3: FREQUENCY BALANCE (Weight 0.1 / 10 pts) ---
+  // Minimal - platform manipulation overrides natural balance
   
-  if (bigCount > smallCount * 1.8) sizeScores['SMALL'] += 15;
-  else if (smallCount > bigCount * 1.8) sizeScores['BIG'] += 15;
+  if (bigCount > smallCount * 2) sizeScores['SMALL'] += 10;
+  else if (smallCount > bigCount * 2) sizeScores['BIG'] += 10;
   
-  if (redCount > greenCount * 1.8) colorScores['GREEN'] += 15;
-  else if (greenCount > redCount * 1.8) colorScores['RED'] += 15;
+  if (redCount > greenCount * 2) colorScores['GREEN'] += 10;
+  else if (greenCount > redCount * 2) colorScores['RED'] += 10;
 
-  // --- STRATEGY 4: ALTERNATION PATTERNS (Weight 0.05 / 5 pts) ---
-  // Minimal weight - streaks are king
+  // --- STRATEGY 4: ALTERNATION (Weight 0.05 / 5 pts) ---
+  // Almost irrelevant with bait logic
   const sizeAlt = checkAlternation(sizeHistory);
-  if (sizeAlt.isAlternating) sizeScores[sizeAlt.next as 'BIG'|'SMALL'] += 5;
+  if (sizeAlt.isAlternating && !inLongBigPhase) {
+    sizeScores[sizeAlt.next as 'BIG'|'SMALL'] += 5;
+  }
   
   const colorAlt = checkAlternation(colorHistory);
   if (colorAlt.isAlternating && colorAlt.next !== 'VIOLET') {
       colorScores[colorAlt.next as 'RED'|'GREEN'] += 5;
   }
-
-  // --- STRATEGY 5: VIOLET FOCUS (Removed) ---
-  // Violet not prioritized in aggressive betting
 
 
   // --- FINALIZE PREDICTIONS ---
@@ -195,10 +227,11 @@ export function generatePrediction(history: WingoRound[]): PredictionResult {
 • **Dark Horse:** VIOLET (${violetProb}%)
 
 **Active Patterns:**
-${sizeStreak >= 4 ? `• ⚠️ Strong ${sizeHistory[sizeHistory.length-1]} Streak (${sizeStreak} rounds) - Reversal likely` : sizeStreak >= 3 ? `• ⚠️ ${sizeHistory[sizeHistory.length-1]} Streak detected (${sizeStreak} rounds)` : ''}
-${sizeAlt.isAlternating ? `• ⚡ Alternation Pattern Active` : ''}
-${bigGap >= 4 || smallGap >= 4 ? `• ⏱️ ${bigGap > smallGap ? 'BIG' : 'SMALL'} Overdue (${Math.max(bigGap, smallGap)} rounds)` : ''}
-${bigCount > smallCount * 1.5 || smallCount > bigCount * 1.5 ? `• ⚖️ Frequency Imbalance Detected` : ''}
+${inLongBigPhase ? `• 🔥 LONG BIG PHASE (${bigInLast10}/10 Big rounds - Bait likely)` : ''}
+${lastSize === 'SMALL' && bigInLast10 >= 7 ? `• 🎣 BAIT DETECTED - BIG continuation expected` : ''}
+${lastColor === 'VIOLET' && inLongBigPhase ? `• 🎯 Violet → RED bias active (70-85%)` : ''}
+${smallsInLast3 >= 2 ? `• ⚠️ Real SMALL streak starting` : ''}
+${sizeStreak >= 6 ? `• 📈 ${lastSize} Streak: ${sizeStreak} rounds` : ''}
 
 > *Analysis based on pattern recognition. Not financial advice.*
   `;
