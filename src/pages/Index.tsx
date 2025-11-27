@@ -5,7 +5,6 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { StarfieldBackground } from '@/components/StarfieldBackground';
 import { HelpPricingSidebar } from '@/components/HelpPricingSidebar';
 import { PredictionBox } from '@/components/PredictionBox';
-import { ExtractedRounds } from '@/components/ExtractedRounds';
 import { extractWingoData, WingoRound } from '@/utils/ocr';
 import { generatePrediction } from '@/utils/predictionEngine';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,11 +186,6 @@ const Index = () => {
         <div className="w-full shrink-0">
             <PredictionBox prediction={prediction} isLoading={isProcessing} />
         </div>
-
-        {/* Extracted Rounds Display */}
-        {history.length > 0 && (
-          <ExtractedRounds rounds={history} />
-        )}
 
         {/* Analysis Explanation Removed as per request */}
 
