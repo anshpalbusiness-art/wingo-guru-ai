@@ -17,7 +17,7 @@ const getColorFromNumber = (num: number): string => {
   return 'Unknown';
 };
 
-const resizeImage = (file: File, maxWidth: number = 800): Promise<File> => {
+const resizeImage = (file: File, maxWidth: number = 1200): Promise<File> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = URL.createObjectURL(file);
@@ -38,19 +38,22 @@ const resizeImage = (file: File, maxWidth: number = 800): Promise<File> => {
         reject(new Error('Canvas context failed'));
         return;
       }
+      // Use better quality smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
       
       canvas.toBlob((blob) => {
-         if (blob) {
-           const resizedFile = new File([blob], file.name, {
-             type: 'image/jpeg',
-             lastModified: Date.now(),
-           });
-           resolve(resizedFile);
-         } else {
-           reject(new Error('Canvas to Blob failed'));
-         }
-       }, 'image/jpeg', 0.75);
+        if (blob) {
+          const resizedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(resizedFile);
+        } else {
+          reject(new Error('Canvas to Blob failed'));
+        }
+      }, 'image/jpeg', 0.8); // Increased quality to 0.8
     };
     img.onerror = reject;
   });
@@ -60,7 +63,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
   try {
     console.log('Starting OCR processing...');
     
-    // Resize image to speed up OCR
+    // Resize image to speed up OCR but keep quality high enough for text
     const resizedImage = await resizeImage(imageFile);
     
     // Use CDN for worker to avoid path issues on mobile/deployments
@@ -86,54 +89,81 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
     // Try multiple patterns to extract round numbers and result digits
     
-    // Pattern 1: Full format "20241125010123 | 5" or similar
-    // Matches 10-15 digits (round), optional separators, single digit (result)
-    const pattern1 = /(\d{10,15})[\s|:-]*(\d)\b/g;
+    // Pattern 1: Full format "20241125010123 | 5" or "2024-11-27-123 | 5"
+    // Matches 8-20 chars (digits/dashes), optional separators, single digit (result)
+    const pattern1 = /([\d-]{8,20})[\s|:-]+(\d)\b/g;
     
     // Pattern 2: Round number and result on separate lines or spaced
-    // Looks for long number (round) ... short number (result)
-    const pattern2 = /(\d{8,15}).*?(\d)\b/g;
+    const pattern2 = /([\d-]{8,20}).*?(\d)\b/g;
 
     // Pattern 3: Just single digits 0-9 (fallback for simple lists)
-    const pattern3 = /\b([0-9])\b/g;
+    const pattern3 = /([0-9])/g;
 
     let match;
     const roundCounter = Date.now() % 100000000; // Use timestamp-based counter for fallback
 
-    // Try Pattern 1 (Structured)
-    const text1 = text;
-    while ((match = pattern1.exec(text1)) !== null) {
-      const roundNum = parseInt(match[1]);
-      const number = parseInt(match[2]);
-      
-      if (number >= 0 && number <= 9) {
-        rounds.push({
-          round: roundNum,
-          number: number,
-          color: getColorFromNumber(number)
-        });
-      }
+    // --- STRATEGY 1: CONTEXT MATCH (Strongest) ---
+    // Look for digit followed by Wingo keywords (Big, Small, Red, Green, Violet)
+    // Example: "5 Big", "2 Red", "Result: 4"
+    const contextPattern = /(\d)\s*(Big|Small|Red|Green|Violet|Result)/ig;
+    let contextMatch;
+    while ((contextMatch = contextPattern.exec(text)) !== null) {
+        const num = parseInt(contextMatch[1]);
+        if (num >= 0 && num <= 9) {
+            // Try to find a round number in the same line or nearby text
+            const roundMatch = text.substring(Math.max(0, contextMatch.index - 30), contextMatch.index).match(/([\d-]{8,20})/);
+            const roundNumStr = roundMatch ? roundMatch[1].replace(/\D/g, '') : '';
+            const roundNum = roundNumStr ? parseInt(roundNumStr) : (roundCounter - rounds.length);
+            
+            if (!rounds.some(r => r.round === roundNum)) {
+                rounds.push({
+                    round: roundNum,
+                    number: num,
+                    color: getColorFromNumber(num)
+                });
+            }
+        }
     }
-    
-    console.log('Pattern 1 extraction:', rounds.length);
+    console.log('Context extraction:', rounds.length);
 
-    // If Pattern 1 found few results, try Pattern 2 to find more
+    // --- STRATEGY 2: STRUCTURED PATTERN ---
+    // Pattern 1: Full format "20241125010123 | 5"
     if (rounds.length < 5) {
-      console.log('Few results from Pattern 1, trying Pattern 2...');
-      // Look for lines that have a long number
-      const potentialLines = lines.filter(l => /\d{8,}/.test(l));
+        const text1 = text;
+        while ((match = pattern1.exec(text1)) !== null) {
+            const roundNumStr = match[1].replace(/\D/g, '');
+            const roundNum = parseInt(roundNumStr);
+            const number = parseInt(match[2]);
+            
+            if (number >= 0 && number <= 9) {
+                 if (!rounds.some(r => r.round === roundNum)) {
+                    rounds.push({
+                        round: roundNum,
+                        number: number,
+                        color: getColorFromNumber(number)
+                    });
+                }
+            }
+        }
+        console.log('Pattern 1 extraction:', rounds.length);
+    }
+
+    // --- STRATEGY 3: RELAXED LINE SCAN ---
+    // Look for lines with a long number and a digit, allowing text after the digit
+    if (rounds.length < 5) {
+      console.log('Few results, trying Relaxed Line Scan...');
+      const potentialLines = lines.filter(l => /[\d-]{8,}/.test(l));
       
       potentialLines.forEach(line => {
-        // Match a long number (period) and a single digit result at the end
-        // We use a more flexible regex here
-        const match = line.match(/(\d{8,15})[^\d]*?(\d)\s*$/);
+        // Match round number ... (some text) ... digit ... (optional text)
+        const match = line.match(/([\d-]{8,20}).*?\b(\d)\b/);
         
         if (match) {
-          const roundNum = parseInt(match[1]);
+          const roundNumStr = match[1].replace(/\D/g, '');
+          const roundNum = parseInt(roundNumStr);
           const number = parseInt(match[2]);
           
           if (number >= 0 && number <= 9) {
-            // Check if we already have this round
             if (!rounds.some(r => r.round === roundNum)) {
               rounds.push({
                 round: roundNum,
@@ -144,13 +174,11 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
           }
         }
       });
+      console.log('Relaxed Line Scan:', rounds.length);
     }
     
-    console.log('Pattern 2 extraction:', rounds.length);
-
-    // SPECIAL FALLBACK: Line-ending digit scanner
-    // If we still have < 5 rounds, many screenshots just look like: "Period...  Result"
-    // But the period might be misread. Let's just trust lines that end in a single digit 0-9.
+    // --- STRATEGY 4: END-OF-LINE DIGIT ---
+    // Fallback for "Period...  Result" where result is last
     if (rounds.length < 5) {
       console.log('Trying line-ending digit scan...');
       const digitLines = lines.filter(l => /\b\d\s*$/.test(l));
@@ -159,9 +187,9 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
         const digitMatch = line.match(/(\d)\s*$/);
         if (digitMatch) {
           const num = parseInt(digitMatch[1]);
-          // Try to find a period number in the same line, otherwise make one up
-          const periodMatch = line.match(/(\d{8,})/);
-          const roundNum = periodMatch ? parseInt(periodMatch[1]) : (roundCounter - idx);
+          const periodMatch = line.match(/([\d-]{8,})/);
+          const roundNumStr = periodMatch ? periodMatch[1].replace(/\D/g, '') : '';
+          const roundNum = roundNumStr ? parseInt(roundNumStr) : (roundCounter - idx - 100);
           
           if (!rounds.some(r => r.round === roundNum)) {
              rounds.push({
@@ -176,14 +204,16 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
     // If still no structured data, just find all single digits
     // This is common in screenshots that just show the result column
-    if (rounds.length < 5) {
+    if (rounds.length < 3) {
       console.log('Falling back to simple digit extraction');
       const numbers: number[] = [];
       
       // Clean text to remove common non-result numbers (like time 12:30, dates, etc)
       // We'll assume single digits on their own lines or separated by spaces are results
+      // IMPORTANT: Remove any long number sequences (4+ digits) first to avoid parsing years/IDs as results
       const cleanText = text.replace(/\d{2}:\d{2}/g, '') // Remove times
-                           .replace(/\d{4}-\d{2}-\d{2}/g, ''); // Remove dates
+                           .replace(/\d{4}-\d{2}-\d{2}/g, '') // Remove dates
+                           .replace(/\d{4,}/g, ''); // Remove years, round IDs, big numbers
                            
       while ((match = pattern3.exec(cleanText)) !== null) {
         const num = parseInt(match[1]);
@@ -223,6 +253,10 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
     // Ensure we don't have duplicates and sort
     const uniqueRounds = Array.from(new Map(rounds.map(item => [item.round, item])).values());
+    
+    // Sort by round number ascending (Oldest -> Newest)
+    // This is crucial for prediction engine which expects the last element to be the most recent
+    uniqueRounds.sort((a, b) => a.round - b.round);
     
     return uniqueRounds;
 
