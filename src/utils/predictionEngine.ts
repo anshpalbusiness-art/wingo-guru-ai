@@ -25,13 +25,13 @@ function checkAlternation(history: string[]): { isAlternating: boolean; next: st
 }
 
 export function generatePrediction(history: WingoRound[]): PredictionResult {
-  if (history.length < 3) {
+  if (history.length < 2) {
      return {
         color: 'GREEN', size: 'SMALL', confidence: 60, strategy: 'Insufficient Data',
-        explanation: '⚠️ **Need at least 3 rounds** for analysis. Please upload a clearer screenshot.',
+        explanation: '⚠️ **Need at least 2 rounds** for analysis. Please upload a clearer screenshot showing more history.',
         bankrollSuggestion: { main: {color: 'GREEN', percentage: 100}, hedge1: {color: 'RED', percentage: 0}, hedge2: {color: 'VIOLET', percentage: 0}}
      };
-  }
+   }
 
   // Analyze last 10-20 rounds with weighted importance
   const recent = history.slice(-20);
