@@ -51,12 +51,14 @@ const Index = () => {
   const handleImageUpload = async (file: File) => {
     setIsProcessing(true);
     try {
-      const rounds = await extractWingoData(file);
+      const allRounds = await extractWingoData(file);
+      // Only use last 10 rounds for analysis
+      const rounds = allRounds.slice(-10);
       setHistory(rounds);
       
       toast({
         title: 'Screenshot Processed',
-        description: `Extracted ${rounds.length} rounds successfully! Analyzing with AI...`
+        description: `Extracted ${allRounds.length} rounds, analyzing last 10 with AI...`
       });
       
       // Run local prediction engine first to get structured analysis
