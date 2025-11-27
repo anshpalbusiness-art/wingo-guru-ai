@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Image as ImageIcon, Loader2, Info } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ImageCropModal } from './ImageCropModal';
 
 interface ImageUploadProps {
   onImageUpload: (file: File) => void;
@@ -9,11 +10,34 @@ interface ImageUploadProps {
 }
 
 export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) => {
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [originalFileName, setOriginalFileName] = useState<string>('');
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      onImageUpload(acceptedFiles[0]);
+      const file = acceptedFiles[0];
+      setOriginalFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [onImageUpload]);
+  }, []);
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], originalFileName, {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    });
+    setImageToCrop(null);
+    onImageUpload(croppedFile);
+  };
+
+  const handleCropCancel = () => {
+    setImageToCrop(null);
+    setOriginalFileName('');
+  };
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
@@ -26,52 +50,60 @@ export const ImageUpload = ({ onImageUpload, isProcessing }: ImageUploadProps) =
   });
 
   return (
-    <div
-      {...getRootProps()}
-      onClick={open}
-      className={cn(
-        "group relative border border-dashed rounded-xl p-5 sm:p-6 md:p-8 text-center cursor-pointer transition-colors bg-gradient-to-b from-white/5 to-transparent touch-manipulation",
-        isDragActive ? "border-blue-500 bg-blue-500/5" : "border-white/20 active:border-white/40 sm:hover:border-white/40 active:bg-white/5 sm:hover:bg-white/5",
-        isProcessing && "opacity-50 cursor-not-allowed pointer-events-none"
-      )}
-    >
-      <input {...getInputProps()} />
-      
-      <div className="flex flex-col items-center gap-2 sm:gap-3">
-        <div className={cn(
-          "w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all sm:group-hover:scale-110 sm:group-hover:border-white/20 sm:group-hover:bg-white/10",
-          isDragActive && "bg-blue-500/20 border-blue-500/50"
-        )}>
-          {isProcessing ? (
-             <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
-          ) : isDragActive ? (
-            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-          ) : (
-            <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-white/60 sm:group-hover:text-white transition-colors" />
-          )}
-        </div>
+    <>
+      <div
+        {...getRootProps()}
+        onClick={open}
+        className={cn(
+          "group relative border border-dashed rounded-xl p-5 sm:p-6 md:p-8 text-center cursor-pointer transition-colors bg-gradient-to-b from-white/5 to-transparent touch-manipulation",
+          isDragActive ? "border-blue-500 bg-blue-500/5" : "border-white/20 active:border-white/40 sm:hover:border-white/40 active:bg-white/5 sm:hover:bg-white/5",
+          isProcessing && "opacity-50 cursor-not-allowed pointer-events-none"
+        )}
+      >
+        <input {...getInputProps()} />
         
-        <div className="space-y-1.5 sm:space-y-2 w-full">
-          <p className="text-xs sm:text-sm font-medium text-white transition-colors">
-            {isDragActive ? 'Drop it!' : 'Upload Screenshot'}
-          </p>
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
+          <div className={cn(
+            "w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all sm:group-hover:scale-110 sm:group-hover:border-white/20 sm:group-hover:bg-white/10",
+            isDragActive && "bg-blue-500/20 border-blue-500/50"
+          )}>
+            {isProcessing ? (
+               <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
+            ) : isDragActive ? (
+              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+            ) : (
+              <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-white/60 sm:group-hover:text-white transition-colors" />
+            )}
+          </div>
           
-          <button 
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              open();
-            }}
-            className="w-full py-2.5 px-4 bg-white/10 active:bg-white/20 rounded-lg text-xs font-medium text-white border border-white/10 transition-colors md:hidden touch-manipulation"
-          >
-            Tap to Select
-          </button>
+          <div className="space-y-1.5 sm:space-y-2 w-full">
+            <p className="text-xs sm:text-sm font-medium text-white transition-colors">
+              {isDragActive ? 'Drop it!' : 'Upload Screenshot'}
+            </p>
+            
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                open();
+              }}
+              className="w-full py-2.5 px-4 bg-white/10 active:bg-white/20 rounded-lg text-xs font-medium text-white border border-white/10 transition-colors md:hidden touch-manipulation"
+            >
+              Tap to Select
+            </button>
 
-          <p className="text-[10px] sm:text-xs text-muted-foreground hidden md:block">
-            or drag and drop screenshot
-          </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground hidden md:block">
+              or drag and drop screenshot
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      <ImageCropModal
+        image={imageToCrop}
+        onComplete={handleCropComplete}
+        onCancel={handleCropCancel}
+      />
+    </>
   );
 };
