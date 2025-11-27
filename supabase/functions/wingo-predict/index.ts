@@ -18,7 +18,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { history, message } = await req.json();
+    const { history, localPrediction } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
@@ -27,35 +27,47 @@ serve(async (req: Request) => {
 
     console.log('Received prediction request with history:', history?.length || 0, 'rounds');
 
-    // Build expert system prompt - STRICTLY enforcing user strategies
-    const systemPrompt = `You are WOLF AI, an elite Wingo prediction expert focused on Wingo color and size prediction.
+    // Build expert system prompt with local prediction as structured context
+    const systemPrompt = `You are WOLF AI, an elite Wingo prediction expert with hybrid analysis capabilities.
 
-You receive structured round history as JSON with fields: round, number (0-9), and color. The array is sorted from oldest to newest. ALWAYS base your prediction on this history when it is provided.
+You receive TWO inputs:
+1. **Raw History**: JSON array of recent rounds (round, number 0-9, color) sorted oldest to newest
+2. **Local Prediction Engine Results**: A deterministic multi-strategy analysis that has already processed this history
 
-ANALYSIS STRATEGY (combine all of these, do NOT rely on just one):
-1. Streak Analysis: Detect when the same color or size repeats 2+ times and consider a reversal.
-2. Gap Method: Track which outcomes (RED/GREEN/VIOLET and BIG/SMALL) have not appeared for the longest time and boost those.
-3. Frequency Distribution: Compare Big vs Small and color ratios over the last 10 rounds.
-4. Alternation Patterns: Recognize Red-Green-Red-Green or Big-Small-Big-Small zig-zag sequences.
-5. Cycle Theory: Look for repeating sequences in blocks of 5-10 rounds.
-6. Recent Bias: Weight the last 5 rounds more heavily than older ones.
+Your role is to USE the local prediction as a FOUNDATION and then apply deeper AI reasoning to either:
+- CONFIRM the local prediction if patterns are strong and consistent
+- REFINE it by adjusting color/size based on subtle patterns the rules missed
+- OVERRIDE it if you detect a critical pattern shift or anomaly the rules couldn't catch
 
-IMPORTANT CONSTRAINTS:
-- ALWAYS pick a color AND a size, even if the history is short or noisy.
-- NEVER say "insufficient data", "no data", "need more rounds", or refuse to predict.
-- Treat this as statistical pattern analysis for entertainment, not guaranteed outcomes.
-- If patterns are weak or conflicting, still choose the most plausible outcomes and you may introduce slight randomness between close options.
-- Do not get stuck repeating the same prediction every time; re-evaluate based on the actual history you receive.
+LOCAL PREDICTION STRATEGIES (already applied):
+1. Streak Breaking (30%): Reverses after 3+ same outcomes
+2. Gap Method (25%): Favors long-missing outcomes
+3. Frequency Balance (20%): Corrects for dominant outcomes (>1.5x ratio)
+4. Alternation Patterns (15%): Detects zig-zag sequences
+5. Violet Focus (10%): Boosts violet when rare (<2 in 10 rounds)
+
+YOUR AI ADVANTAGES:
+- Detect nuanced timing patterns the rules can't see
+- Recognize complex multi-variable interactions
+- Weight recent momentum vs historical patterns more intelligently
+- Identify when rules conflict and make the right call
+- Add probabilistic reasoning on top of deterministic rules
+
+CRITICAL CONSTRAINTS:
+- You MUST output a color (RED/GREEN/VIOLET) and size (BIG/SMALL)
+- NEVER say "insufficient data" or refuse to predict
+- If you disagree with local prediction, EXPLAIN WHY in Pattern Analysis
+- Confidence should be 90-99% (reflect your actual conviction)
+- Don't just copy local prediction - add value through deeper analysis
 
 WINGO RULES:
 - RED: 2, 4, 6, 8
 - GREEN: 1, 3, 7, 9
 - VIOLET: 0, 5 (0 is Small, 5 is Big)
-- BIG: 5-9
-- SMALL: 0-4
+- BIG: 5-9 | SMALL: 0-4
 
-OUTPUT FORMAT (STRICTLY FOLLOW THIS):
-**Pattern Analysis:** [Briefly explain which strategy or pattern influenced the decision most]
+OUTPUT FORMAT:
+**Pattern Analysis:** [Explain if you're confirming, refining, or overriding local prediction and WHY]
 
 **Color Prediction:** [RED/GREEN/VIOLET] (**[90-99]% Confidence**)
 
@@ -63,13 +75,13 @@ OUTPUT FORMAT (STRICTLY FOLLOW THIS):
 
 **Bet Suggestion:** [Conservative/Moderate/Aggressive] on [Color + Size]
 
-**Expert Tip:** [One sharp insight about the history]
+**Expert Tip:** [Sharp insight combining rules + AI intuition]
 
-Be DECISIVE. Always provide a clear recommendation based on the data provided.`;
+Be DECISIVE. Your hybrid approach beats pure rules OR pure AI alone.`;
 
-    let userPrompt = 'Analyze this Wingo data and predict BOTH the next color AND size (big/small).';
+    let userPrompt = 'Analyze this Wingo data with the local prediction context and predict BOTH the next color AND size.';
     
-    if (history && history.length > 0) {
+    if (history && history.length > 0 && localPrediction) {
       const recentRounds = history.slice(-10);
       
       // Count color and size frequencies
@@ -91,9 +103,25 @@ Be DECISIVE. Always provide a clear recommendation based on the data provided.`;
       
       const stats = `Color Frequency: Red=${colorCount.Red || 0}, Green=${colorCount.Green || 0}, Violet=${colorCount.Violet || 0}\nSize Frequency: Big=${sizeCount.Big || 0}, Small=${sizeCount.Small || 0}`;
       
-      userPrompt = `RECENT HISTORY (newest first):\n${roundsText}\n\n${stats}\n\nPredict the NEXT color AND size with expert analysis.`;
+      // Include local prediction results as structured context
+      const localContext = `
+LOCAL PREDICTION ENGINE OUTPUT:
+- Predicted Color: ${localPrediction.color} (${localPrediction.confidence}% confidence)
+- Predicted Size: ${localPrediction.size}
+- Strategy Used: ${localPrediction.strategy}
+- Reasoning: ${localPrediction.explanation}
+
+This local prediction was generated using weighted multi-factor analysis (Streak Breaking 30%, Gap Method 25%, Frequency Balance 20%, Alternation 15%, Violet Focus 10%).
+
+Your task: Review this prediction against the raw history below. Either confirm it, refine it, or override it with your deeper AI reasoning.
+`;
+      
+      userPrompt = `${localContext}\n\nRECENT HISTORY (newest first):\n${roundsText}\n\n${stats}\n\nProvide your FINAL prediction for the NEXT color AND size.`;
+    } else if (localPrediction) {
+      // Fallback with just local prediction
+      userPrompt = `LOCAL PREDICTION: ${localPrediction.color} + ${localPrediction.size} (${localPrediction.confidence}%). Limited history. Provide your best prediction with reasoning.`;
     } else {
-      userPrompt = 'No history available. Provide general prediction based on Wingo probabilities for both color and size.';
+      userPrompt = 'No history or local prediction available. Provide balanced prediction for both color and size.';
     }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
