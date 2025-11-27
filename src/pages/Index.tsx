@@ -6,6 +6,7 @@ import { StarfieldBackground } from '@/components/StarfieldBackground';
 import { HelpPricingSidebar } from '@/components/HelpPricingSidebar';
 import { PredictionBox } from '@/components/PredictionBox';
 import { extractWingoData, WingoRound } from '@/utils/ocr';
+import { generatePrediction } from '@/utils/predictionEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, LogOut, User } from 'lucide-react';
@@ -58,9 +59,22 @@ const Index = () => {
         description: `Extracted ${rounds.length} rounds successfully! Analyzing with AI...`
       });
       
-      // Call Supabase Edge Function (Gemini AI)
+      // Run local prediction engine first to get structured analysis
+      const localPrediction = generatePrediction(rounds);
+      console.log('Local prediction engine result:', localPrediction);
+      
+      // Call Supabase Edge Function (Gemini AI) with both history AND local prediction
       const { data, error } = await supabase.functions.invoke('wingo-predict', {
-        body: { history: rounds }
+        body: { 
+          history: rounds,
+          localPrediction: {
+            color: localPrediction.color,
+            size: localPrediction.size,
+            confidence: localPrediction.confidence,
+            strategy: localPrediction.strategy,
+            explanation: localPrediction.explanation
+          }
+        }
       });
 
       if (error) throw error;
