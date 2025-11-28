@@ -56,13 +56,8 @@ const Index = () => {
       const rounds = allRounds.slice(-10);
       setHistory(rounds);
       
-      const analyzingCount = Math.min(allRounds.length, 10);
-      toast({
-        title: 'Screenshot Processed',
-        description: allRounds.length <= 10 
-          ? `Extracted ${allRounds.length} rounds, analyzing with AI...`
-          : `Extracted ${allRounds.length} rounds, analyzing last ${analyzingCount} with AI...`
-      });
+      // Screenshot processed; proceeding directly to analysis without popup toast
+
       
       // Run local prediction engine first to get structured analysis
       const localPrediction = generatePrediction(rounds);
