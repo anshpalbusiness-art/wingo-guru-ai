@@ -209,7 +209,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
     // If still no structured data, just find all single digits
     // This is common in screenshots that just show the result column
-    if (rounds.length < 3) {
+    if (rounds.length < 8) {
       console.log('Falling back to simple digit extraction');
       const numbers: number[] = [];
       
@@ -219,7 +219,7 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
       const cleanText = text.replace(/\d{2}:\d{2}/g, '') // Remove times
                            .replace(/\d{4}-\d{2}-\d{2}/g, '') // Remove dates
                            .replace(/\d{4,}/g, ''); // Remove years, round IDs, big numbers
-                           
+                          
       while ((match = pattern3.exec(cleanText)) !== null) {
         const num = parseInt(match[1]);
         if (num >= 0 && num <= 9) {
@@ -229,22 +229,22 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
 
       // If we found numbers, assume they are results (most recent first usually)
       if (numbers.length > 0) {
-        // Filter out sequences that don't look like results (e.g. page numbers)
-        // Wingo results are random 0-9.
-        
         // Take up to 20 numbers
         const validNumbers = numbers.slice(0, 20);
-        
-        // Clear existing rounds if we're falling back
-        rounds.length = 0;
-        
-        validNumbers.forEach((num, index) => {
-          rounds.push({
-            round: roundCounter - index, // Decrement round number
-            number: num,
-            color: getColorFromNumber(num)
+
+        // If digit-only extraction finds more results than structured parsing,
+        // prefer it and rebuild the rounds array from scratch.
+        if (validNumbers.length > rounds.length) {
+          rounds.length = 0;
+
+          validNumbers.forEach((num, index) => {
+            rounds.push({
+              round: roundCounter - index, // Decrement round number
+              number: num,
+              color: getColorFromNumber(num)
+            });
           });
-        });
+        }
       }
     }
 
