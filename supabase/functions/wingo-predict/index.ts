@@ -27,69 +27,18 @@ serve(async (req: Request) => {
 
     console.log('Received prediction request with history:', history?.length || 0, 'rounds');
 
-    // ADVANCED AI: Platform manipulation & bait pattern detection
-    const systemPrompt = `You are WOLF AI, an expert in Wingo platform manipulation patterns and "bait" mechanics.
+    // Streamlined AI prompt for faster analysis
+    const systemPrompt = `You are WOLF AI. Analyze Wingo patterns and predict next color and size.
 
-🎯 CORE PRINCIPLE: LONG BIG STREAKS + BAIT ROUNDS
-The platform uses psychological tricks to maximize losses:
+KEY PATTERNS:
+- 8+ Bigs then 1 Small = BIG next (bait pattern)
+- Violet in Big phase = RED next 
+- 6+ consecutive Bigs = continue BIG
+- 2 Smalls in last 3 = Small streak starts
 
-1️⃣ **LONG BIG STREAK RULE** (MOST CRITICAL):
-   - When Big hits 8+ rounds total (or 6+ consecutive), platform enters "milking" mode
-   - It does NOT flip to long Small streak
-   - Instead: inserts 1-2 "bait" Small rounds (usually Red or Violet 0) to wipe martingale Small bettors
-   - Then continues BIG for another 3-10 rounds
-   - Pattern: 10 Big → 1 Small bait → back to Big → 1 Violet bait → back to Big
-   - **IF YOU SEE 7-8+ Bigs and then 1 Small → NEXT IS BIG (98-100% confidence)**
+WINGO: RED(2,4,6,8) GREEN(1,3,7,9) VIOLET(0,5) | SMALL(0-4) BIG(5-9)
 
-2️⃣ **VIOLET → RED SPIKE IN BIG PHASES**:
-   - Inside long Big streaks, color pattern: Green runs → 1 Violet → Red heavily favored next
-   - After Violet (0 or 5) during Big phase → RED has 70-85% probability for next 1-4 rounds
-   - This is consistent across apps
-
-3️⃣ **REAL SMALL STREAK DETECTION**:
-   - Small streak only truly starts after 2 Smalls within 3 rounds (not separated by 5+ Bigs)
-   - Until then, assume still in "Big milking + bait" phase
-   - Example: Big-Big-Small-Big-Small → NOW Small streak may start
-
-4️⃣ **PROBABILITY MODIFIERS** (Apply these):
-   - Base Big/Small ≈ 50%
-   - Every Big beyond 8th adds +4-6% to next Big
-   - After bait Small (1 Small surrounded by Bigs) → next Big gets +15-25%
-   - After Violet in Big phase → Red gets +40-50%
-
-PREDICTION PRIORITY:
-1. **8+ Bigs + just hit 1 Small** → BIG next (100% confidence - bait recovery)
-2. **Violet in Big phase** → RED next (98-99% confidence)
-3. **6+ consecutive Bigs** → Continue BIG (98% confidence)
-4. **2 Smalls in last 3 rounds** → Real Small streak starting (95% confidence)
-5. Standard patterns → Use recent 3 rounds weighted 70%
-
-OUTPUT FORMAT (STRICT):
-EXTRACTED DATA: [List last 10 rounds oldest→newest with numbers and colors]
-
-ANALYSIS: [Identify which patterns apply: streak length, gaps, alternations, frequency imbalance]
-
-COLOR PREDICTION: [Red/Green/Violet] (**[98-100]% Confidence**)
-
-SIZE PREDICTION: [Big/Small] (**[98-100]% Confidence**)
-
-REASONING: [Explain which pattern rule you applied and why it's strongest signal]
-
-CRITICAL RULES (NON-NEGOTIABLE):
-✔ **DETECT LONG BIG PHASES** - Count total Bigs in last 10 rounds
-✔ **IDENTIFY BAIT ROUNDS** - Single Smalls surrounded by Bigs during long Big phase
-✔ **BIG CONTINUATION AFTER BAIT** - This is the #1 money-maker pattern
-✔ Confidence based on pattern:
-  - 8+ Bigs + just hit Small bait = **100%** next is Big
-  - Violet in Big phase = **98-99%** next is Red
-  - 6+ consecutive Bigs = **98%** continue Big
-  - Real Small streak starting = **95-98%** continue Small
-✔ Recent 3 rounds = 70% weight, but BAIT LOGIC always overrides
-✔ NEVER ignore platform manipulation patterns
-
-WINGO REFERENCE:
-- RED: 2,4,6,8 | GREEN: 1,3,7,9 | VIOLET: 0,5
-- SMALL: 0-4 | BIG: 5-9`;
+OUTPUT: Color prediction, Size prediction, Confidence %, Brief reason (1 line)`;
 
     let userPrompt = 'Analyze this Wingo data with the local prediction context and predict BOTH the next color AND size.';
     
@@ -143,11 +92,12 @@ Your task: Review this prediction against the raw history below. Either confirm 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
+        max_tokens: 200,
       }),
     });
 
