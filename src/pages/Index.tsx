@@ -62,6 +62,15 @@ const Index = () => {
       // Run local prediction engine first to get structured analysis
       const localPrediction = generatePrediction(rounds);
       console.log('Local prediction engine result:', localPrediction);
+
+      // Show instant local prediction while AI refines in the background
+      setPrediction({
+        color: localPrediction.color.toUpperCase(),
+        size: localPrediction.size.toUpperCase(),
+        confidence: localPrediction.confidence,
+      });
+      setExplanation(localPrediction.explanation);
+      setIsProcessing(false);
       
       // Call Supabase Edge Function (Gemini AI) with both history AND local prediction
       const { data, error } = await supabase.functions.invoke('wingo-predict', {
@@ -84,24 +93,24 @@ const Index = () => {
 
       // Parse AI Response
       // Expected format: "**Color Prediction:** RED (**90% Confidence**)"
-      const colorMatch = predictionText.match(/Color Prediction:\*?\*?\s*([A-Z]+)/i);
-      const sizeMatch = predictionText.match(/Size Prediction:\*?\*?\s*([A-Z]+)/i);
+      const colorMatch = predictionText.match(/Color Prediction:\*\*?\s*([A-Z]+)/i);
+      const sizeMatch = predictionText.match(/Size Prediction:\*\*?\s*([A-Z]+)/i);
       const confidenceMatch = predictionText.match(/(\d+)%\s*Confidence/i);
 
-      const color = colorMatch ? colorMatch[1].toUpperCase() : 'RED';
-      const size = sizeMatch ? sizeMatch[1].toUpperCase() : 'BIG';
+      const color = colorMatch ? colorMatch[1].toUpperCase() : localPrediction.color.toUpperCase();
+      const size = sizeMatch ? sizeMatch[1].toUpperCase() : localPrediction.size.toUpperCase();
       // User wants 97-100% confidence displayed, but we'll use AI's or boost it
-      let confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 98;
+      let confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : localPrediction.confidence;
       
       // Enforce 97-99% as per previous user request, or keep AI's if it's high?
       // User said "always ... between 97-100%". I will force it again to be safe.
       confidence = 97 + Math.floor(Math.random() * 3);
 
-      // Update prediction state
+      // Update prediction state with AI-refined result
       setPrediction({
-        color: color,
-        size: size,
-        confidence: confidence
+        color,
+        size,
+        confidence
       });
       
       setExplanation(predictionText); // Use the full AI text as explanation
@@ -119,6 +128,7 @@ const Index = () => {
         variant: 'destructive'
       });
     } finally {
+      // Ensure processing state is reset even if something fails early
       setIsProcessing(false);
     }
   };
