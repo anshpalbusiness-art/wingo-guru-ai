@@ -103,15 +103,15 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
     const roundCounter = Date.now() % 100000000; // Use timestamp-based counter for fallback
 
     // --- STRATEGY 1: CONTEXT MATCH (Strongest) ---
-    // Look for digit followed by Wingo keywords (Big, Small, Red, Green, Violet)
-    // Example: "5 Big", "2 Red", "Result: 4"
-    const contextPattern = /(\d)\s*(Big|Small|Red|Green|Violet|Result)/ig;
+    // Look for digit (including in parentheses) followed by Wingo keywords
+    // Example: "5 Big", "2 Red", "(0) Small", "Result: 4"
+    const contextPattern = /\(?\s*(\d)\s*\)?\s*(Big|Small|Red|Green|Violet|Result)/ig;
     let contextMatch;
     while ((contextMatch = contextPattern.exec(text)) !== null) {
         const num = parseInt(contextMatch[1]);
         if (num >= 0 && num <= 9) {
-            // Try to find a round number in the same line or nearby text
-            const roundMatch = text.substring(Math.max(0, contextMatch.index - 30), contextMatch.index).match(/([\d-]{8,20})/);
+            // Try to find a round number in the same line or nearby text (look back further)
+            const roundMatch = text.substring(Math.max(0, contextMatch.index - 50), contextMatch.index).match(/([\d]{8,20})/);
             const roundNumStr = roundMatch ? roundMatch[1].replace(/\D/g, '') : '';
             const roundNum = roundNumStr ? parseInt(roundNumStr) : (roundCounter - rounds.length);
             
@@ -126,26 +126,31 @@ export const extractWingoData = async (imageFile: File): Promise<WingoRound[]> =
     }
     console.log('Context extraction:', rounds.length);
 
-    // --- STRATEGY 2: STRUCTURED PATTERN ---
-    // Pattern 1: Full format "20241125010123 | 5"
+    // --- STRATEGY 2: LINE-BY-LINE AGGRESSIVE EXTRACTION ---
+    // Extract each line that has a long round number and any digit
     if (rounds.length < 5) {
-        const text1 = text;
-        while ((match = pattern1.exec(text1)) !== null) {
-            const roundNumStr = match[1].replace(/\D/g, '');
-            const roundNum = parseInt(roundNumStr);
-            const number = parseInt(match[2]);
+        lines.forEach(line => {
+            // Match: long number (round) ... any text ... digit (result, possibly in parens)
+            // Example: "20251128100010281 (0) Small ee"
+            const lineMatch = line.match(/([\d]{12,20}).*?\(?\s*(\d)\s*\)?/);
             
-            if (number >= 0 && number <= 9) {
-                 if (!rounds.some(r => r.round === roundNum)) {
-                    rounds.push({
-                        round: roundNum,
-                        number: number,
-                        color: getColorFromNumber(number)
-                    });
+            if (lineMatch) {
+                const roundNumStr = lineMatch[1].replace(/\D/g, '');
+                const roundNum = parseInt(roundNumStr);
+                const number = parseInt(lineMatch[2]);
+                
+                if (number >= 0 && number <= 9 && roundNum > 1000000) {
+                    if (!rounds.some(r => r.round === roundNum)) {
+                        rounds.push({
+                            round: roundNum,
+                            number: number,
+                            color: getColorFromNumber(number)
+                        });
+                    }
                 }
             }
-        }
-        console.log('Pattern 1 extraction:', rounds.length);
+        });
+        console.log('Line-by-line extraction:', rounds.length);
     }
 
     // --- STRATEGY 3: RELAXED LINE SCAN ---
